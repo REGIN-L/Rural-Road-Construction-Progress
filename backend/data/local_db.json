@@ -25,6 +25,18 @@
       "createdAt": "2026-09-23T04:21:37.423Z"
     },
     {
+      "_id": "6ae35de2aa61c21ada558a6e",
+      "name": "Ramesh Patel (Citizen)",
+      "email": "citizen@ruralconnect.gov.in",
+      "password": "$2a$10$9UaLwGpYG.MCjyAq8AzLTOZYpiKhnBlkiaIxFoV5CQRm7SEOlM/ia",
+      "role": "PUBLIC",
+      "village": "Shivpur",
+      "district": "Varanasi",
+      "state": "Uttar Pradesh",
+      "phone": "9876543210",
+      "createdAt": "2026-10-09T06:00:00.000Z"
+    },
+    {
       "_id": "usr_1790137356652_6w7ri",
       "name": "Test User",
       "email": "test_1790137356540@example.com",
@@ -47,6 +59,22 @@
       "password": "$2a$10$poRHts4VYZsvzb14/HOsO.iXMknH6oKNUaooegx/2mFImy3okSssS",
       "role": "ENGINEER",
       "createdAt": "2026-09-23T06:06:35.376Z"
+    },
+    {
+      "_id": "usr_1793332296138_iznpf",
+      "name": "sabareesan",
+      "email": "kufhaviuhfifbuahr@gmail.com",
+      "password": "$2a$10$ZETtDh.rndb94wmrQ9ADGuUI8PXiyeJMXrubHHEheu1Vxa0T0seEm",
+      "role": "ENGINEER",
+      "createdAt": "2026-10-30T03:51:36.138Z"
+    },
+    {
+      "_id": "usr_1793332383292_jurph",
+      "name": "sabareesan",
+      "email": "kufahr@gmail.com",
+      "password": "$2a$10$asIW8yFkivNYckXOPQtgTOiAsMji/rlRtrH2iCGQTYYpt.Z4rtCn6",
+      "role": "ENGINEER",
+      "createdAt": "2026-10-30T03:53:03.292Z"
     }
   ],
   "projects": [
@@ -83,7 +111,15 @@
         "submittedBy": "user_contractor",
         "submittedAt": "2026-10-03T06:17:27.938Z"
       },
-      "createdAt": "2026-10-03T06:17:27.936Z"
+      "createdAt": "2026-10-03T06:17:27.936Z",
+      "latitude": 11.282,
+      "longitude": 77.565,
+      "coordinates": {
+        "lat": 11.282,
+        "lng": 77.565,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_1791008247901_1glc",
@@ -110,7 +146,15 @@
       "createdBy": "user_admin",
       "creatorRole": "ADMIN",
       "completion": null,
-      "createdAt": "2026-10-03T06:17:27.901Z"
+      "createdAt": "2026-10-03T06:17:27.901Z",
+      "latitude": 11.854,
+      "longitude": 78.138,
+      "coordinates": {
+        "lat": 11.854,
+        "lng": 78.138,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_1791008209666_4q6g",
@@ -145,7 +189,11 @@
         "submittedBy": "user_contractor",
         "submittedAt": "2026-10-03T06:16:49.668Z"
       },
-      "createdAt": "2026-10-03T06:16:49.666Z"
+      "createdAt": "2026-10-03T06:16:49.666Z",
+      "latitude": null,
+      "longitude": null,
+      "coordinates": null,
+      "isGeotagged": false
     },
     {
       "_id": "proj_1791008209644_nezg",
@@ -172,7 +220,11 @@
       "createdBy": "user_admin",
       "creatorRole": "ADMIN",
       "completion": null,
-      "createdAt": "2026-10-03T06:16:49.644Z"
+      "createdAt": "2026-10-03T06:16:49.644Z",
+      "latitude": null,
+      "longitude": null,
+      "coordinates": null,
+      "isGeotagged": false
     },
     {
       "_id": "proj_1791008174744_c40q",
@@ -199,7 +251,11 @@
       "createdBy": "user_admin",
       "creatorRole": "ADMIN",
       "completion": null,
-      "createdAt": "2026-10-03T06:16:14.744Z"
+      "createdAt": "2026-10-03T06:16:14.744Z",
+      "latitude": null,
+      "longitude": null,
+      "coordinates": null,
+      "isGeotagged": false
     },
     {
       "_id": "proj_001",
@@ -221,7 +277,22 @@
       "isPublic": true,
       "showContractor": true,
       "showFinancialData": true,
-      "createdAt": "2025-06-01T00:00:00.000Z"
+      "createdAt": "2025-06-01T00:00:00.000Z",
+      "latestProgressPhoto": "https://images.unsplash.com/photo-1541888946425-d0fbb1861593?auto=format&fit=crop&w=800&q=80",
+      "latestProgressUpdate": {
+        "progress": 75,
+        "workDescription": "Bituminous concrete wearing course paving layer test",
+        "photoUrl": "https://images.unsplash.com/photo-1541888946425-d0fbb1861593?auto=format&fit=crop&w=800&q=80",
+        "updatedAt": "2026-10-09T05:06:52.458Z"
+      },
+      "latitude": 11.2758,
+      "longitude": 77.5828,
+      "coordinates": {
+        "lat": 11.2758,
+        "lng": 77.5828,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_002",
@@ -243,7 +314,15 @@
       "isPublic": true,
       "showContractor": true,
       "showFinancialData": true,
-      "createdAt": "2025-08-15T00:00:00.000Z"
+      "createdAt": "2025-08-15T00:00:00.000Z",
+      "latitude": 11.7414,
+      "longitude": 78.0416,
+      "coordinates": {
+        "lat": 11.7414,
+        "lng": 78.0416,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_003",
@@ -265,7 +344,32 @@
       "isPublic": true,
       "showContractor": true,
       "showFinancialData": true,
-      "createdAt": "2024-10-01T00:00:00.000Z"
+      "createdAt": "2024-10-01T00:00:00.000Z",
+      "latestProgressPhoto": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+      "latestProgressUpdate": {
+        "progress": 100,
+        "workDescription": "Project Completed: All concrete pavement, shoulders, and signage 100% completed.",
+        "photoUrl": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+        "updatedAt": "2026-10-09T05:09:20.498Z"
+      },
+      "completion": {
+        "completionPercentage": 100,
+        "completionDate": "2026-03-31",
+        "completionDescription": "All concrete pavement, shoulders, and signage 100% completed.",
+        "completionImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+        "completionPhoto": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+        "contractorRemarks": "Final inspection passed without punchlist defects.",
+        "submittedBy": "user_contractor",
+        "submittedAt": "2026-10-09T05:09:20.498Z"
+      },
+      "latitude": 11.4589,
+      "longitude": 78.1724,
+      "coordinates": {
+        "lat": 11.4589,
+        "lng": 78.1724,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_004",
@@ -287,7 +391,15 @@
       "isPublic": true,
       "showContractor": true,
       "showFinancialData": true,
-      "createdAt": "2025-02-10T00:00:00.000Z"
+      "createdAt": "2025-02-10T00:00:00.000Z",
+      "latitude": 10.6609,
+      "longitude": 77.0048,
+      "coordinates": {
+        "lat": 10.6609,
+        "lng": 77.0048,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_005",
@@ -309,7 +421,15 @@
       "isPublic": true,
       "showContractor": false,
       "showFinancialData": true,
-      "createdAt": "2025-11-01T00:00:00.000Z"
+      "createdAt": "2025-11-01T00:00:00.000Z",
+      "latitude": 11.1932,
+      "longitude": 77.2689,
+      "coordinates": {
+        "lat": 11.1932,
+        "lng": 77.2689,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_006",
@@ -331,7 +451,15 @@
       "isPublic": true,
       "showContractor": true,
       "showFinancialData": false,
-      "createdAt": "2025-01-15T00:00:00.000Z"
+      "createdAt": "2025-01-15T00:00:00.000Z",
+      "latitude": 10.2381,
+      "longitude": 77.4892,
+      "coordinates": {
+        "lat": 10.2381,
+        "lng": 77.4892,
+        "path": []
+      },
+      "isGeotagged": true
     },
     {
       "_id": "proj_007",
@@ -353,10 +481,118 @@
       "isPublic": true,
       "showContractor": true,
       "showFinancialData": true,
-      "createdAt": "2024-09-01T00:00:00.000Z"
+      "createdAt": "2024-09-01T00:00:00.000Z",
+      "latitude": 10.9602,
+      "longitude": 79.3845,
+      "coordinates": {
+        "lat": 10.9602,
+        "lng": 79.3845,
+        "path": []
+      },
+      "isGeotagged": true
     }
   ],
   "updates": [
+    {
+      "_id": "upd_1791522560498",
+      "projectId": "proj_003",
+      "progress": 100,
+      "progressPercentage": 100,
+      "workDescription": "Project Completed: All concrete pavement, shoulders, and signage 100% completed.",
+      "notes": "Project Completed: All concrete pavement, shoulders, and signage 100% completed.",
+      "photoUrl": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+      "remarks": "Final inspection passed without punchlist defects.",
+      "amountSpent": 30800000,
+      "isPublic": true,
+      "updatedBy": {
+        "id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "role": "CONTRACTOR"
+      },
+      "contractorId": "user_contractor",
+      "contractorName": "KPR Infrastructure",
+      "createdAt": "2026-10-09T05:09:20.498Z"
+    },
+    {
+      "_id": "upd_1791522412458",
+      "projectId": "proj_001",
+      "progress": 75,
+      "progressPercentage": 75,
+      "workDescription": "Bituminous concrete wearing course paving layer test",
+      "notes": "Bituminous concrete wearing course paving layer test",
+      "photoUrl": "https://images.unsplash.com/photo-1541888946425-d0fbb1861593?auto=format&fit=crop&w=800&q=80",
+      "remarks": "",
+      "amountSpent": 2762500,
+      "isPublic": true,
+      "updatedBy": {
+        "id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "role": "CONTRACTOR"
+      },
+      "contractorId": "user_contractor",
+      "contractorName": "KPR Infrastructure",
+      "createdAt": "2026-10-09T05:06:52.458Z"
+    },
+    {
+      "_id": "upd_1791478946903",
+      "projectId": "proj_1791470666353_n6f4",
+      "progress": 100,
+      "progressPercentage": 100,
+      "workDescription": "completed",
+      "notes": "completed",
+      "photoUrl": "/uploads/file-1791478944575-759754265.png",
+      "remarks": "",
+      "amountSpent": 0,
+      "isPublic": true,
+      "updatedBy": {
+        "id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "role": "CONTRACTOR"
+      },
+      "contractorId": "user_contractor",
+      "contractorName": "KPR Infrastructure",
+      "createdAt": "2026-10-08T17:02:26.903Z"
+    },
+    {
+      "_id": "upd_1791478773450",
+      "projectId": "proj_1791470666353_n6f4",
+      "progress": 100,
+      "progressPercentage": 100,
+      "workDescription": "Project Completed: Full stretch paved, signboards installed, and all drainage channels inspected.",
+      "notes": "Project Completed: Full stretch paved, signboards installed, and all drainage channels inspected.",
+      "photoUrl": "/uploads/completion_test_evidence.jpg",
+      "remarks": "Handed over to public works department.",
+      "amountSpent": 0,
+      "isPublic": true,
+      "updatedBy": {
+        "id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "role": "CONTRACTOR"
+      },
+      "contractorId": "user_contractor",
+      "contractorName": "KPR Infrastructure",
+      "createdAt": "2026-10-08T16:59:33.450Z"
+    },
+    {
+      "_id": "upd_1791478636983",
+      "projectId": "proj_1791470666353_n6f4",
+      "progress": 75,
+      "progressPercentage": 75,
+      "workDescription": "Sub-base layer compaction completed with roller and soil testing passed.",
+      "notes": "Sub-base layer compaction completed with roller and soil testing passed.",
+      "photoUrl": "/uploads/test_progress_photo.jpg",
+      "remarks": "",
+      "amountSpent": 0,
+      "isPublic": true,
+      "updatedBy": {
+        "id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "role": "CONTRACTOR"
+      },
+      "contractorId": "user_contractor",
+      "contractorName": "KPR Infrastructure",
+      "createdAt": "2026-10-08T16:57:16.983Z"
+    },
     {
       "_id": "upd_1790137386724",
       "projectId": "proj_001",
@@ -395,9 +631,66 @@
         "role": "CONTRACTOR"
       },
       "createdAt": "2026-09-23T06:05:07.632Z"
+    },
+    {
+      "_id": "upd_1791470735051",
+      "projectId": "proj_1791470735036_p53d",
+      "currentProgress": 35,
+      "notes": "Earthwork levelling and gravel laying completed across 3 km segment.",
+      "isPublic": true,
+      "updatedBy": {
+        "id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "role": "CONTRACTOR"
+      },
+      "createdAt": "2026-10-08T14:45:35.052Z"
     }
   ],
   "deletionRequests": [
+    {
+      "_id": "delreq_1791470735055_de7p",
+      "projectId": "proj_1791470735036_p53d",
+      "projectName": "Project Alpha - Revised Alignment",
+      "requestedBy": {
+        "_id": "user_engineer",
+        "name": "Er. Rajesh Kumar",
+        "email": "engineer@ruralconnect.gov.in",
+        "role": "ENGINEER"
+      },
+      "requestedByRole": "ENGINEER",
+      "reason": "High Court stay order permanently cancelled this highway corridor.",
+      "status": "Approved",
+      "reviewedBy": {
+        "_id": "user_admin",
+        "name": "Administrator",
+        "email": "admin@ruralconnect.gov.in"
+      },
+      "reviewedAt": "2026-10-08T14:45:35.056Z",
+      "adminResponse": "",
+      "createdAt": "2026-10-08T14:45:35.055Z"
+    },
+    {
+      "_id": "delreq_1791470735048_66m5",
+      "projectId": "proj_1791470735036_p53d",
+      "projectName": "Project Alpha - Revised Alignment",
+      "requestedBy": {
+        "_id": "user_engineer",
+        "name": "Er. Rajesh Kumar",
+        "email": "engineer@ruralconnect.gov.in",
+        "role": "ENGINEER"
+      },
+      "requestedByRole": "ENGINEER",
+      "reason": "Survey found existing private land dispute along corridor.",
+      "status": "Rejected",
+      "reviewedBy": {
+        "_id": "user_admin",
+        "name": "Administrator",
+        "email": "admin@ruralconnect.gov.in"
+      },
+      "reviewedAt": "2026-10-08T14:45:35.049Z",
+      "adminResponse": "Revenue department resolved the land issue. Project must continue.",
+      "createdAt": "2026-10-08T14:45:35.048Z"
+    },
     {
       "_id": "delreq_1791008247920_0ann",
       "projectId": "proj_1791008247908_11xe",
@@ -473,9 +766,291 @@
       "completionImage": "https://images.unsplash.com/photo-1541888946425-d0fbb18f15f9?auto=format&fit=crop&w=1200&q=80",
       "contractorRemarks": "All safety tests, compaction checks, and lane markings completed.",
       "submittedAt": "2026-10-03T06:17:27.938Z"
+    },
+    {
+      "_id": "comp_1791478773450",
+      "projectId": "proj_1791470666353_n6f4",
+      "contractorId": {
+        "_id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "email": "contractor@ruralconnect.gov.in"
+      },
+      "completionPercentage": 100,
+      "completionDate": "2026-10-08",
+      "completionDescription": "Full stretch paved, signboards installed, and all drainage channels inspected.",
+      "completionImage": "/uploads/completion_test_evidence.jpg",
+      "completionPhoto": "/uploads/completion_test_evidence.jpg",
+      "contractorRemarks": "Handed over to public works department.",
+      "submittedAt": "2026-10-08T16:59:33.450Z"
+    },
+    {
+      "_id": "comp_1791522560498",
+      "projectId": "proj_003",
+      "contractorId": {
+        "_id": "user_contractor",
+        "name": "KPR Infrastructure",
+        "email": "contractor@ruralconnect.gov.in"
+      },
+      "completionPercentage": 100,
+      "completionDate": "2026-03-31",
+      "completionDescription": "All concrete pavement, shoulders, and signage 100% completed.",
+      "completionImage": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+      "completionPhoto": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+      "contractorRemarks": "Final inspection passed without punchlist defects.",
+      "submittedAt": "2026-10-09T05:09:20.498Z"
     }
   ],
   "publicQueries": [
+    {
+      "_id": "query_1793337827626",
+      "queryId": "RCQ-2026-0012",
+      "name": "sabareesan",
+      "contactInfo": "9876543210",
+      "queryType": "Request New Road",
+      "requestType": "NEW_ROAD_REQUEST",
+      "roadName": "highways",
+      "startPoint": "thalavadi",
+      "endPoint": "kermalam",
+      "reason": "road damaged",
+      "urgency": "High",
+      "state": "Uttar Pradesh",
+      "district": "Varanasi",
+      "location": "Shivpur, Varanasi",
+      "village": "Shivpur",
+      "description": "highways: road construction (Reason: road damaged)",
+      "image": "/uploads/file-1793337820998-233014845.png",
+      "status": "In Progress",
+      "adminResponse": "",
+      "projectId": null,
+      "submittedByUserId": "6ae35de2aa61c21ada558a6e",
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T05:23:47.626Z",
+      "updatedAt": "2026-10-30T05:24:49.116Z"
+    },
+    {
+      "_id": "query_1793335731467",
+      "queryId": "RCQ-2026-0011",
+      "name": "Panchayat Leader Arumugam",
+      "contactInfo": "panchayat@erode.gov.in",
+      "queryType": "Request New Road",
+      "requestType": "NEW_ROAD_REQUEST",
+      "roadName": "Modakkurichi - Vellakovil Bypass Link",
+      "startPoint": "Modakkurichi Junction",
+      "endPoint": "Vellakovil Outer Ring",
+      "reason": "Essential for transporting agricultural produce to market",
+      "urgency": "High",
+      "state": "Tamil Nadu",
+      "district": "Erode",
+      "location": "Modakkurichi, Erode",
+      "village": "Modakkurichi",
+      "description": "Modakkurichi - Vellakovil Bypass Link: Needed for farmers and daily commuters",
+      "image": "",
+      "status": "Submitted",
+      "adminResponse": "",
+      "projectId": null,
+      "submittedByUserId": "6ae35de2aa61c21ada558a6e",
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T04:48:51.467Z",
+      "updatedAt": "2026-10-30T04:48:51.467Z"
+    },
+    {
+      "_id": "query_1793335731465",
+      "queryId": "RCQ-2026-0010",
+      "name": "Citizen With Old Session",
+      "contactInfo": "citizen@ruralconnect.gov.in",
+      "queryType": "Delayed Work",
+      "requestType": "FEEDBACK",
+      "roadName": "",
+      "startPoint": "",
+      "endPoint": "",
+      "reason": "",
+      "urgency": "High",
+      "state": "Tamil Nadu",
+      "district": "Dharmapuri",
+      "location": "Pennagaram",
+      "village": "Pennagaram",
+      "description": "Work stopped for the past 3 weeks without explanation.",
+      "image": "",
+      "status": "Submitted",
+      "adminResponse": "",
+      "projectId": null,
+      "submittedByUserId": "6ae35de2aa61c21ada558a6e",
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T04:48:51.465Z",
+      "updatedAt": "2026-10-30T04:48:51.465Z"
+    },
+    {
+      "_id": "query_1793335731462",
+      "queryId": "RCQ-2026-0009",
+      "name": "Ramesh Patel",
+      "contactInfo": "citizen@ruralconnect.gov.in",
+      "queryType": "Drainage Problem",
+      "requestType": "FEEDBACK",
+      "roadName": "",
+      "startPoint": "",
+      "endPoint": "",
+      "reason": "",
+      "urgency": "Medium",
+      "state": "Tamil Nadu",
+      "district": "Salem",
+      "location": "Omalur North",
+      "village": "Omalur North",
+      "description": "Roadside water logging during heavy rain.",
+      "image": "",
+      "status": "Submitted",
+      "adminResponse": "",
+      "projectId": null,
+      "submittedByUserId": "6ae35de2aa61c21ada558a6e",
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T04:48:51.462Z",
+      "updatedAt": "2026-10-30T04:48:51.462Z"
+    },
+    {
+      "_id": "query_1793335731451",
+      "queryId": "RCQ-2026-0008",
+      "name": "Gopal S.",
+      "contactInfo": "9876501234",
+      "queryType": "Damaged Road",
+      "requestType": "FEEDBACK",
+      "roadName": "",
+      "startPoint": "",
+      "endPoint": "",
+      "reason": "",
+      "urgency": "High",
+      "state": "Tamil Nadu",
+      "district": "Erode",
+      "location": "Perundurai West",
+      "village": "Perundurai",
+      "description": "Potholes along the highway junction causing traffic hazard.",
+      "image": "",
+      "status": "Submitted",
+      "adminResponse": "",
+      "projectId": null,
+      "submittedByUserId": null,
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T04:48:51.451Z",
+      "updatedAt": "2026-10-30T04:48:51.451Z"
+    },
+    {
+      "_id": "query_1793335707163",
+      "queryId": "RCQ-2026-0007",
+      "name": "Gopal S.",
+      "contactInfo": "9876501234",
+      "queryType": "Damaged Road",
+      "requestType": "FEEDBACK",
+      "roadName": "",
+      "startPoint": "",
+      "endPoint": "",
+      "reason": "",
+      "urgency": "High",
+      "state": "Tamil Nadu",
+      "district": "Erode",
+      "location": "Perundurai West",
+      "village": "Perundurai",
+      "description": "Potholes along the highway junction causing traffic hazard.",
+      "image": "",
+      "status": "Submitted",
+      "adminResponse": "",
+      "projectId": null,
+      "submittedByUserId": null,
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T04:48:27.163Z",
+      "updatedAt": "2026-10-30T04:48:27.163Z"
+    },
+    {
+      "_id": "query_1793332608220",
+      "queryId": "RCQ-2026-0006",
+      "name": "sabaree",
+      "contactInfo": "9876543210",
+      "queryType": "Request New Road",
+      "requestType": "NEW_ROAD_REQUEST",
+      "roadName": "kermalam road",
+      "startPoint": "thalavadi",
+      "endPoint": "kermalam",
+      "reason": "high   heavy transport",
+      "urgency": "High",
+      "state": "Uttar Pradesh",
+      "district": "Varanasi",
+      "location": "Shivpur, Varanasi",
+      "village": "Shivpur",
+      "description": "kermalam road: more accident (Reason: high   heavy transport )",
+      "image": "/uploads/file-1793332606500-572350844.png",
+      "status": "Under Review",
+      "adminResponse": "",
+      "projectId": null,
+      "submittedByUserId": "6ae35de2aa61c21ada558a6e",
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T03:56:48.220Z",
+      "updatedAt": "2026-10-30T03:57:49.672Z"
+    },
+    {
+      "_id": "query_1793332166250",
+      "queryId": "RCQ-2026-0005",
+      "name": "Ramesh Patel",
+      "contactInfo": "9876543210",
+      "queryType": "Damaged Road",
+      "requestType": "FEEDBACK",
+      "roadName": "",
+      "startPoint": "",
+      "endPoint": "",
+      "reason": "",
+      "urgency": "Urgent",
+      "state": "Tamil Nadu",
+      "district": "Karur",
+      "location": "Karur Rural, Karur, Tamil Nadu",
+      "village": "Karur Rural",
+      "description": "road ",
+      "image": "",
+      "status": "Submitted",
+      "adminResponse": "",
+      "projectId": "proj_1791470666353_n6f4",
+      "submittedByUserId": "6ae35de2aa61c21ada558a6e",
+      "isApprovedForProject": false,
+      "createdProjectId": null,
+      "createdAt": "2026-10-30T03:49:26.250Z",
+      "updatedAt": "2026-10-30T03:50:00.596Z"
+    },
+    {
+      "_id": "query_1791529183093",
+      "queryId": "RCQ-2026-0004",
+      "name": "Ramesh Patel (Citizen)",
+      "contactInfo": "9876543210",
+      "queryType": "Road Damage / Potholes",
+      "state": "Uttar Pradesh",
+      "district": "Varanasi",
+      "location": "Shivpur",
+      "description": "error",
+      "image": "",
+      "status": "Pending",
+      "adminResponse": "",
+      "projectId": null,
+      "createdAt": "2026-10-09T06:59:43.093Z",
+      "updatedAt": "2026-10-09T06:59:43.093Z"
+    },
+    {
+      "_id": "query_1791528878182",
+      "queryId": "RCQ-2026-0003",
+      "name": "Sunil Verma",
+      "contactInfo": "sunil@example.com",
+      "queryType": "Pothole / Road Damage",
+      "state": "Uttar Pradesh",
+      "district": "Varanasi",
+      "location": "Shivpur Sector 2",
+      "description": "Deep potholes after monsoon rain near village culvert km 4.",
+      "image": "",
+      "status": "In Progress",
+      "adminResponse": "Assigned to field engineer for site survey. Patchwork scheduled for this week.",
+      "projectId": null,
+      "createdAt": "2026-10-09T06:54:38.182Z",
+      "updatedAt": "2026-10-09T06:57:23.150Z"
+    },
     {
       "_id": "query_1791008247943",
       "queryId": "RCQ-2026-0002",
@@ -509,6 +1084,92 @@
       "projectId": null,
       "createdAt": "2026-10-03T06:16:49.673Z",
       "updatedAt": "2026-10-03T06:16:49.673Z"
+    }
+  ],
+  "editRequests": [
+    {
+      "_id": "editreq_1791470735040_4a6g",
+      "projectId": "proj_1791470735036_p53d",
+      "projectName": "Project Alpha Test Road",
+      "projectCode": "TEST-PRJ-5034",
+      "requestedBy": {
+        "_id": "user_engineer",
+        "name": "Er. Rajesh Kumar",
+        "email": "engineer@ruralconnect.gov.in",
+        "role": "ENGINEER"
+      },
+      "requestedByRole": "ENGINEER",
+      "requestedChanges": {
+        "projectName": "Project Alpha - Revised Alignment",
+        "roadLength": 6.2,
+        "description": "Updated alignment per PWD inspection survey"
+      },
+      "reason": "Re-survey by field team revealed an additional 0.7 km link requirement.",
+      "status": "Approved",
+      "reviewedBy": {
+        "_id": "user_admin",
+        "name": "Administrator",
+        "email": "admin@ruralconnect.gov.in"
+      },
+      "reviewedAt": "2026-10-08T14:45:35.045Z",
+      "adminComment": "Sanctioned and verified with district superintending engineer.",
+      "createdAt": "2026-10-08T14:45:35.040Z"
+    },
+    {
+      "_id": "editreq_1791470666356_ij2x",
+      "projectId": "proj_1791470666353_n6f4",
+      "projectName": "Project Alpha Test Road",
+      "projectCode": "TEST-PRJ-6352",
+      "requestedBy": {
+        "_id": "user_engineer",
+        "name": "Er. Rajesh Kumar",
+        "email": "engineer@ruralconnect.gov.in",
+        "role": "ENGINEER"
+      },
+      "requestedByRole": "ENGINEER",
+      "requestedChanges": {
+        "projectName": "Project Alpha - Revised Alignment",
+        "roadLength": 6.2,
+        "description": "Updated alignment per PWD inspection survey"
+      },
+      "reason": "Re-survey by field team revealed an additional 0.7 km link requirement.",
+      "status": "Approved",
+      "reviewedBy": {
+        "_id": "user_admin",
+        "name": "Administrator",
+        "email": "admin@ruralconnect.gov.in"
+      },
+      "reviewedAt": "2026-10-08T14:44:26.359Z",
+      "adminComment": "Sanctioned and verified with district superintending engineer.",
+      "createdAt": "2026-10-08T14:44:26.356Z"
+    },
+    {
+      "_id": "editreq_1791470602027_4k08",
+      "projectId": "proj_1791470602023_yvo1",
+      "projectName": "Project Alpha Test Road",
+      "projectCode": "TEST-PRJ-2022",
+      "requestedBy": {
+        "_id": "user_engineer",
+        "name": "Er. Rajesh Kumar",
+        "email": "engineer@ruralconnect.gov.in",
+        "role": "ENGINEER"
+      },
+      "requestedByRole": "ENGINEER",
+      "requestedChanges": {
+        "projectName": "Project Alpha - Revised Alignment",
+        "roadLength": 6.2,
+        "description": "Updated alignment per PWD inspection survey"
+      },
+      "reason": "Re-survey by field team revealed an additional 0.7 km link requirement.",
+      "status": "Approved",
+      "reviewedBy": {
+        "_id": "user_admin",
+        "name": "Administrator",
+        "email": "admin@ruralconnect.gov.in"
+      },
+      "reviewedAt": "2026-10-08T14:43:22.032Z",
+      "adminComment": "Sanctioned and verified with district superintending engineer.",
+      "createdAt": "2026-10-08T14:43:22.027Z"
     }
   ]
 }

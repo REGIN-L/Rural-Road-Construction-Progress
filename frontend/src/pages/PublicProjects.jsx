@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, RefreshCw, FolderX } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Filter, RefreshCw, FolderX, Plus } from 'lucide-react';
 import { searchPublicProjects, getPublicProjects } from '../services/projectService';
 import ProjectCard from '../components/ProjectCard';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -27,7 +28,7 @@ export default function PublicProjects() {
             if (minProgress > 0) params.minProgress = minProgress;
 
             const res = await searchPublicProjects(params);
-            setProjects(res.data);
+            setProjects(res.data || []);
         } catch (err) {
             console.error('Failed to search public projects:', err);
         } finally {
@@ -40,8 +41,9 @@ export default function PublicProjects() {
         const init = async () => {
             try {
                 const res = await getPublicProjects();
-                setProjects(res.data);
-                const dists = Array.from(new Set(res.data.map(p => p.district))).sort();
+                const list = res.data || [];
+                setProjects(list);
+                const dists = Array.from(new Set(list.map(p => p.district).filter(Boolean))).sort();
                 setDistrictsList(dists);
             } catch (err) {
                 console.error(err);
@@ -70,13 +72,21 @@ export default function PublicProjects() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
             {/* Header */}
-            <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-['Space_Grotesk']">
-                    Approved Public Rural Road Projects
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-500">
-                    Browse verified construction projects, track road completion progress, and view transparent public records.
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-['Space_Grotesk']">
+                        Approved Public Rural Road Projects
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500">
+                        Browse verified construction projects, track road completion progress, and view transparent public records.
+                    </p>
+                </div>
+                <Link
+                    to="/public/submit-query?type=request"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-900/20 transition-all shrink-0 self-start sm:self-auto cursor-pointer"
+                >
+                    <Plus className="w-4 h-4" /> Request a New Road Project
+                </Link>
             </div>
 
             {/* Search & Filter Bar Box */}
@@ -121,10 +131,10 @@ export default function PublicProjects() {
                             className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-900 font-medium focus:outline-none"
                         >
                             <option value="All">All Statuses</option>
-                            <option value="ON_TRACK">On Track</option>
-                            <option value="DELAYED">Delayed</option>
-                            <option value="CRITICAL">Critical</option>
-                            <option value="COMPLETED">Completed</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Delayed">Delayed</option>
+                            <option value="Completed">Completed</option>
                         </select>
                     </div>
 

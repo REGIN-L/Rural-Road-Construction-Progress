@@ -16,9 +16,12 @@ import {
     CheckCircle,
     FilePlus,
     TrendingUp,
-    Receipt
+    Receipt,
+    Award,
+    Trash2,
+    Image as ImageIcon
 } from 'lucide-react';
-import { getProjectById, updateProject, addProgressUpdate } from '../services/projectService';
+import { getProjectById, updateProject, addProgressUpdate, deleteProject } from '../services/projectService';
 import { createExpense, getProjectExpenses } from '../services/expenseService';
 import StatusBadge from '../components/StatusBadge';
 import ProgressBar from '../components/ProgressBar';
@@ -31,7 +34,7 @@ export default function AdminProjectDetails() {
     const [project, setProject] = useState(null);
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'progress' | 'expenses' | 'settings'
+    const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'progress' | 'expenses' | 'completion' | 'settings'
 
     // Forms
     const [progressForm, setProgressForm] = useState({
@@ -50,6 +53,7 @@ export default function AdminProjectDetails() {
 
     const [editForm, setEditForm] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
 
     const loadData = async () => {
         try {
@@ -141,6 +145,24 @@ export default function AdminProjectDetails() {
         }
     };
 
+    const handleDeleteProject = async () => {
+        if (!deleteConfirm) {
+            setDeleteConfirm(true);
+            return;
+        }
+        try {
+            setSubmitting(true);
+            await deleteProject(id);
+            alert('Project deleted successfully.');
+            window.location.href = '/admin/projects';
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete project.');
+            setDeleteConfirm(false);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     if (loading) return <LoadingSpinner text="Loading full administration telemetry for project..." />;
     if (!project) return <div className="p-6 text-slate-500">Project record not found.</div>;
 
@@ -191,12 +213,12 @@ export default function AdminProjectDetails() {
                 </div>
 
                 {/* Tabs Row */}
-                <div className="flex border-b border-slate-200 text-xs font-bold space-x-6">
-                    {['overview', 'progress', 'expenses', 'settings'].map(tab => (
+                <div className="flex border-b border-slate-200 text-xs font-bold space-x-6 overflow-x-auto">
+                    {['overview', 'progress', 'expenses', 'completion', 'settings'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-3 capitalize transition-colors cursor-pointer border-b-2 ${activeTab === tab
+                            className={`pb-3 capitalize transition-colors cursor-pointer border-b-2 whitespace-nowrap ${activeTab === tab
                                     ? 'border-emerald-600 text-emerald-700 font-extrabold'
                                     : 'border-transparent text-slate-500 hover:text-slate-800'
                                 }`}
@@ -204,6 +226,11 @@ export default function AdminProjectDetails() {
                             {tab === 'overview' && 'Project Overview'}
                             {tab === 'progress' && `Progress Timeline (${project.timeline?.length || 0})`}
                             {tab === 'expenses' && `Expense Registry (${expenses.length})`}
+                            {tab === 'completion' && (
+                                <span className={project.completion?.completionPercentage ? 'text-emerald-600' : ''}>
+                                    Completion Evidence {project.completion?.completionPercentage ? '✓' : ''}
+                                </span>
+                            )}
                             {tab === 'settings' && 'Governance & Controls'}
                         </button>
                     ))}
@@ -238,6 +265,23 @@ export default function AdminProjectDetails() {
                             <div className="text-lg font-extrabold text-blue-600 font-['Space_Grotesk']">{project.fundUtilization}%</div>
                         </div>
                     </div>
+
+                    {/* Latest Progress Photo */}
+                    {(project.latestProgressPhoto || project.latestProgressUpdate?.photoUrl) && (
+                        <div className="custom-card p-4 space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                                <ImageIcon className="w-4 h-4 text-blue-600" /> Latest Progress Photo
+                            </div>
+                            <img
+                                src={project.latestProgressPhoto || project.latestProgressUpdate?.photoUrl}
+                                alt="Latest progress"
+                                className="w-full max-h-60 object-cover rounded-xl border border-slate-200 shadow-sm"
+                            />
+                            {project.latestProgressUpdate?.workDescription && (
+                                <p className="text-xs text-slate-600 italic">{project.latestProgressUpdate.workDescription}</p>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -318,12 +362,22 @@ export default function AdminProjectDetails() {
                         {project.timeline && project.timeline.length > 0 ? (
                             <div className="space-y-3">
                                 {project.timeline.map((u, i) => (
-                                    <div key={u._id || i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
+                                    <div key={u._id || i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
                                         <div className="flex items-center justify-between">
-                                            <span className="font-mono text-emerald-800 font-bold">Progress: {u.progress}%</span>
+                                            <span className="font-mono text-emerald-800 font-bold">Progress: {u.progress || u.progressPercentage}%</span>
                                             <span className="text-[11px] text-slate-400">{formatDate(u.createdAt)}</span>
                                         </div>
-                                        <p className="text-slate-700">{u.notes}</p>
+                                        <p className="text-slate-700">{u.workDescription || u.notes}</p>
+                                        {(u.contractorName || u.updatedBy?.name) && (
+                                            <p className="text-[10px] text-slate-400">By: {u.contractorName || u.updatedBy?.name}</p>
+                                        )}
+                                        {(u.photoUrl || u.progressPhoto) && (
+                                            <img
+                                                src={u.photoUrl || u.progressPhoto}
+                                                alt={`Progress photo at ${u.progress || u.progressPercentage}%`}
+                                                className="w-full max-h-40 object-cover rounded-xl border border-slate-200 mt-1"
+                                            />
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -445,7 +499,91 @@ export default function AdminProjectDetails() {
                 </div>
             )}
 
-            {/* Tab 4: Governance Settings */}
+            {/* Tab 4: Completion Evidence */}
+            {activeTab === 'completion' && (
+                <div className="custom-card p-6 space-y-6">
+                    <h3 className="text-base font-bold text-slate-900 font-['Space_Grotesk'] flex items-center gap-2">
+                        <Award className="w-5 h-5 text-emerald-600" />
+                        Contractor Completion Evidence
+                    </h3>
+
+                    {!project.completion?.completionPercentage ? (
+                        <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                            <Award className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                            <p className="text-sm font-semibold text-slate-500">No completion evidence has been submitted yet.</p>
+                            <p className="text-xs text-slate-400 mt-1">The assigned contractor must submit completion evidence through their Contractor Dashboard.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-5">
+                            {/* Completion Status Banner */}
+                            <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <CheckCircle className="w-8 h-8 text-emerald-600 shrink-0" />
+                                <div>
+                                    <div className="text-base font-extrabold text-emerald-900 font-['Space_Grotesk']">
+                                        {project.completion.completionPercentage === 100 ? 'PROJECT COMPLETED' : `${project.completion.completionPercentage}% PROGRESS RECORDED`}
+                                    </div>
+                                    <div className="text-xs text-emerald-700">Completion evidence submitted by contractor</div>
+                                </div>
+                            </div>
+
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                    <div className="text-slate-400 font-medium">Completion %</div>
+                                    <div className="text-xl font-extrabold text-emerald-700 font-['Space_Grotesk']">{project.completion.completionPercentage}%</div>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                    <div className="flex items-center gap-1 text-slate-400 font-medium"><Calendar className="w-3.5 h-3.5" /> Completion Date</div>
+                                    <div className="font-bold text-slate-800">{formatDate(project.completion.completionDate)}</div>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                    <div className="flex items-center gap-1 text-slate-400 font-medium"><Clock className="w-3.5 h-3.5" /> Submitted At</div>
+                                    <div className="font-bold text-slate-800">{formatDate(project.completion.submittedAt)}</div>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                    <div className="text-slate-400 font-medium">Photo Evidence</div>
+                                    <div className={`font-bold ${project.completion.completionImage ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                        {project.completion.completionImage ? '✓ Uploaded' : 'Not provided'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            {project.completion.completionDescription && (
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div className="font-semibold text-slate-700">Completion Description</div>
+                                    <p className="text-slate-700 leading-relaxed">{project.completion.completionDescription}</p>
+                                </div>
+                            )}
+
+                            {/* Contractor Remarks */}
+                            {project.completion.contractorRemarks && (
+                                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-xs space-y-1">
+                                    <div className="font-semibold text-blue-700">Contractor Remarks</div>
+                                    <p className="text-blue-800 leading-relaxed">{project.completion.contractorRemarks}</p>
+                                </div>
+                            )}
+
+                            {/* Completion Image */}
+                            {project.completion.completionImage && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                                        <ImageIcon className="w-4 h-4 text-emerald-600" />
+                                        Completion Photo Evidence
+                                    </div>
+                                    <img
+                                        src={project.completion.completionImage}
+                                        alt={`Completion evidence for ${project.projectName}`}
+                                        className="w-full max-h-80 object-cover rounded-xl border border-slate-200 shadow-sm"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Tab 5: Governance Settings */}
             {activeTab === 'settings' && (
                 <form onSubmit={handleSaveSettings} className="custom-card p-6 space-y-6 text-xs max-w-2xl">
                     <h3 className="text-sm font-bold text-slate-900 font-['Space_Grotesk'] border-b border-slate-100 pb-2">
@@ -529,6 +667,39 @@ export default function AdminProjectDetails() {
                     </button>
                 </form>
             )}
+
+            {/* Admin: Danger Zone – Delete Project */}
+            <div className="custom-card p-5 border-rose-200 bg-rose-50/50 space-y-3">
+                <h3 className="text-sm font-bold text-rose-800 flex items-center gap-2">
+                    <Trash2 className="w-4 h-4" /> Danger Zone
+                </h3>
+                <p className="text-xs text-rose-700">Permanently delete this project and all related data. This action cannot be undone.</p>
+                {deleteConfirm ? (
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-rose-800">Are you absolutely sure?</span>
+                        <button
+                            onClick={handleDeleteProject}
+                            disabled={submitting}
+                            className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs cursor-pointer hover:bg-rose-700 disabled:opacity-50"
+                        >
+                            {submitting ? 'Deleting...' : 'Yes, Delete Project'}
+                        </button>
+                        <button
+                            onClick={() => setDeleteConfirm(false)}
+                            className="px-4 py-2 rounded-xl bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer hover:bg-slate-300"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        onClick={handleDeleteProject}
+                        className="flex items-center gap-2 px-5 py-2 rounded-xl bg-white border border-rose-300 text-rose-700 font-bold text-xs cursor-pointer hover:bg-rose-100 transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4" /> Delete This Project
+                    </button>
+                )}
+            </div>
 
         </div>
     );

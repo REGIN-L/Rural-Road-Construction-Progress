@@ -82,8 +82,21 @@ const projectSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Planned', 'Ongoing', 'Delayed', 'Completed', 'NOT_STARTED', 'IN_PROGRESS', 'ON_TRACK', 'DELAYED', 'CRITICAL', 'COMPLETED'],
-        default: 'Planned'
+        enum: [
+            'Planned', 'Ongoing', 'Delayed', 'Completed',
+            'In Progress', 'Not Started', 'On Track', 'Critical',
+            'NOT_STARTED', 'IN_PROGRESS', 'ON_TRACK', 'DELAYED', 'CRITICAL', 'COMPLETED'
+        ],
+        default: 'Planned',
+        set: function (val) {
+            if (!val) return 'Planned';
+            const s = String(val).trim();
+            if (s === 'In Progress' || s === 'IN_PROGRESS') return 'Ongoing';
+            if (s === 'Not Started' || s === 'NOT_STARTED') return 'Planned';
+            if (s === 'On Track' || s === 'ON_TRACK') return 'Ongoing';
+            if (s === 'Critical' || s === 'CRITICAL') return 'Delayed';
+            return s;
+        }
     },
     isPublic: {
         type: Boolean,
@@ -100,6 +113,37 @@ const projectSchema = new mongoose.Schema({
     publicDescription: {
         type: String,
         default: ''
+    },
+    // GPS & GIS Geotagging Fields
+    latitude: {
+        type: Number,
+        default: null,
+        min: -90,
+        max: 90
+    },
+    longitude: {
+        type: Number,
+        default: null,
+        min: -180,
+        max: 180
+    },
+    coordinates: {
+        lat: {
+            type: Number,
+            default: null
+        },
+        lng: {
+            type: Number,
+            default: null
+        },
+        path: {
+            type: [[Number]],
+            default: []
+        }
+    },
+    isGeotagged: {
+        type: Boolean,
+        default: false
     },
     assignedEngineer: {
         type: mongoose.Schema.Types.ObjectId,
@@ -127,6 +171,11 @@ const projectSchema = new mongoose.Schema({
             default: '',
             trim: true
         },
+        completionPhoto: {
+            type: String,
+            default: '',
+            trim: true
+        },
         contractorRemarks: {
             type: String,
             default: '',
@@ -141,6 +190,17 @@ const projectSchema = new mongoose.Schema({
             type: Date,
             default: null
         }
+    },
+    latestProgressPhoto: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    latestProgressUpdate: {
+        progress: { type: Number, default: 0 },
+        workDescription: { type: String, default: '' },
+        photoUrl: { type: String, default: '' },
+        updatedAt: { type: Date, default: null }
     }
 }, {
     timestamps: true

@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit3, FolderKanban, Search, Plus, Trash2, X, AlertTriangle } from 'lucide-react';
-import { getProjects, updateProject, requestProjectDeletion } from '../services/projectService';
+import { Edit3, FolderKanban, Search, Plus, Trash2, X, AlertTriangle, Award, Clock, Camera } from 'lucide-react';
+import { getProjects, requestProjectEdit, requestProjectDeletion } from '../services/projectService';
 import StatusBadge from '../components/StatusBadge';
 import ProgressBar from '../components/ProgressBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const emptyForm = { projectName: '', village: '', district: '', currentProgress: 0, description: '' };
+const emptyForm = {
+    projectName: '',
+    village: '',
+    district: '',
+    roadLength: '',
+    allocatedBudget: '',
+    expectedCompletion: '',
+    description: '',
+    reason: ''
+};
 
 export default function EngineerProjects() {
     const [projects, setProjects] = useState([]);
@@ -16,6 +25,7 @@ export default function EngineerProjects() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState('success');
 
     // Deletion request state
     const [deletionProject, setDeletionProject] = useState(null);
@@ -28,37 +38,60 @@ export default function EngineerProjects() {
     };
 
     useEffect(() => {
-        loadProjects().catch(() => setMessage('Unable to load assigned projects.')).finally(() => setLoading(false));
+        loadProjects().catch(() => {
+            setMessage('Unable to load assigned projects.');
+            setMessageType('error');
+        }).finally(() => setLoading(false));
     }, []);
 
-    const openEditor = (project) => {
+    const openEditRequestModal = (project) => {
         setSelectedProject(project);
         setForm({
-            projectName: project.projectName,
-            village: project.village,
-            district: project.district,
-            currentProgress: project.currentProgress,
-            description: project.description || ''
+            projectName: project.projectName || '',
+            village: project.village || '',
+            district: project.district || '',
+            roadLength: project.roadLength || '',
+            allocatedBudget: project.allocatedBudget || '',
+            expectedCompletion: project.expectedCompletion ? project.expectedCompletion.split('T')[0] : '',
+            description: project.description || '',
+            reason: ''
         });
         setMessage('');
     };
 
-    const saveChanges = async (event) => {
+    const handleRequestEdit = async (event) => {
         event.preventDefault();
+        if (!selectedProject) return;
+        if (!form.reason.trim()) {
+            setMessage('A reason for the requested changes is required.');
+            setMessageType('error');
+            return;
+        }
+
         try {
             setSaving(true);
-            const response = await updateProject(selectedProject._id, {
-                projectName: form.projectName,
-                village: form.village,
-                district: form.district,
-                currentProgress: Number(form.currentProgress),
-                description: form.description
+            const requestedChanges = {
+                projectName: form.projectName.trim(),
+                village: form.village.trim(),
+                district: form.district.trim(),
+                description: form.description.trim()
+            };
+
+            if (form.roadLength !== '') requestedChanges.roadLength = Number(form.roadLength);
+            if (form.allocatedBudget !== '') requestedChanges.allocatedBudget = Number(form.allocatedBudget);
+            if (form.expectedCompletion) requestedChanges.expectedCompletion = form.expectedCompletion;
+
+            await requestProjectEdit(selectedProject._id, {
+                requestedChanges,
+                reason: form.reason.trim()
             });
-            setProjects(projects.map((project) => project._id === selectedProject._id ? response.data : project));
+
             setSelectedProject(null);
-            setMessage('Project information updated successfully.');
+            setMessage(`Edit request for project ${selectedProject.projectId} submitted successfully to Administrator (Status: PENDING).`);
+            setMessageType('success');
         } catch (error) {
-            setMessage(error.response?.data?.message || 'Project update failed.');
+            setMessage(error.response?.data?.message || 'Failed to submit edit request.');
+            setMessageType('error');
         } finally {
             setSaving(false);
         }
@@ -70,17 +103,21 @@ export default function EngineerProjects() {
         try {
             setRequestingDeletion(true);
             await requestProjectDeletion(deletionProject._id, deletionReason.trim());
-            setMessage(`Deletion request submitted to Administrator for project ${deletionProject.projectId}.`);
+            setMessage(`Deletion request submitted to Administrator for project ${deletionProject.projectId} (Status: PENDING).`);
+            setMessageType('success');
             setDeletionProject(null);
             setDeletionReason('');
         } catch (error) {
             setMessage(error.response?.data?.message || 'Failed to submit deletion request.');
+            setMessageType('error');
         } finally {
             setRequestingDeletion(false);
         }
     };
 
-    const filteredProjects = projects.filter((project) => `${project.projectId} ${project.projectName} ${project.village} ${project.district}`.toLowerCase().includes(search.toLowerCase()));
+    const filteredProjects = projects.filter((project) =>
+        `${project.projectId} ${project.projectName} ${project.village} ${project.district}`.toLowerCase().includes(search.toLowerCase())
+    );
 
     if (loading) return <LoadingSpinner text="Loading assigned project management records..." />;
 
@@ -90,13 +127,19 @@ export default function EngineerProjects() {
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 font-['Space_Grotesk'] flex items-center gap-2">
                         <FolderKanban className="w-5 h-5 text-amber-600" />
-                        Assigned Project Management
+                        Rural Road Construction Projects
                     </h1>
                     <p className="text-xs text-slate-500">
-                        Create and update projects assigned to you. Deletion requires administrative approval.
+                        View all department projects. Create projects directly or propose edits and deletions via administrative approval workflow.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Link
+                        to="/engineer/deletion-requests"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                        <Clock className="w-3.5 h-3.5 text-amber-600" /> My Change Requests
+                    </Link>
                     <Link
                         to="/engineer/projects/create"
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
@@ -106,18 +149,34 @@ export default function EngineerProjects() {
                 </div>
             </div>
 
-            {message && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">{message}</div>}
+            {message && (
+                <div className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between ${
+                    messageType === 'success'
+                        ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                        : 'bg-rose-50 border border-rose-200 text-rose-800'
+                }`}>
+                    <span>{message}</span>
+                    <button onClick={() => setMessage('')} className="text-xs font-bold hover:underline cursor-pointer">✕</button>
+                </div>
+            )}
 
             <div className="custom-card p-4 flex items-center gap-3">
                 <Search className="w-4 h-4 text-slate-400" />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assigned projects by ID, name, village, or district..." className="w-full bg-transparent text-xs text-slate-900 focus:outline-none" />
+                <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search assigned projects by ID, name, village, or district..."
+                    className="w-full bg-transparent text-xs text-slate-900 focus:outline-none"
+                />
             </div>
 
             <div className="grid md:grid-cols-2 gap-5">
                 {filteredProjects.map((project) => (
                     <article key={project._id} className="custom-card p-5 space-y-4">
                         <div className="flex justify-between items-center">
-                            <span className="font-mono text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{project.projectId}</span>
+                            <span className="font-mono text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                {project.projectId}
+                            </span>
                             <StatusBadge status={project.status} />
                         </div>
                         <h2 className="font-bold text-slate-900 text-base">{project.projectName}</h2>
@@ -127,12 +186,67 @@ export default function EngineerProjects() {
                             <span className="text-slate-500">Current Progress</span>
                             <strong className="text-emerald-700">{project.currentProgress}%</strong>
                         </div>
+
+                        {project.completion?.completionPercentage === 100 && (
+                            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1.5 text-xs">
+                                <div className="flex items-center justify-between font-bold text-emerald-800">
+                                    <span className="flex items-center gap-1.5">
+                                        <Award className="w-3.5 h-3.5 text-emerald-600" /> 100% Work Completed
+                                    </span>
+                                    <span className="text-[10px] text-emerald-600 font-normal">
+                                        {project.completion.completionDate ? new Date(project.completion.completionDate).toLocaleDateString() : ''}
+                                    </span>
+                                </div>
+                                {project.completion.completionDescription && (
+                                    <p className="text-slate-600 text-[11px] line-clamp-1">{project.completion.completionDescription}</p>
+                                )}
+                                {project.completion.completionImage && (
+                                    <div className="pt-1">
+                                        <img
+                                            src={project.completion.completionImage}
+                                            alt="Completion evidence"
+                                            className="w-full h-24 object-cover rounded-lg border border-emerald-100"
+                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Latest Site Progress Photo (when in progress) */}
+                        {project.completion?.completionPercentage !== 100 && (project.latestProgressPhoto || project.latestProgressUpdate?.photoUrl) && (
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1.5 text-xs">
+                                <div className="flex items-center justify-between font-bold text-blue-900">
+                                    <span className="flex items-center gap-1.5">
+                                        <Camera className="w-3.5 h-3.5 text-blue-600" /> Latest Site Progress Photo
+                                    </span>
+                                    {project.latestProgressUpdate?.updatedAt && (
+                                        <span className="text-[10px] text-blue-600 font-normal">
+                                            {new Date(project.latestProgressUpdate.updatedAt).toLocaleDateString()}
+                                        </span>
+                                    )}
+                                </div>
+                                <img
+                                    src={project.latestProgressPhoto || project.latestProgressUpdate?.photoUrl}
+                                    alt="Latest progress photo"
+                                    className="w-full h-24 object-cover rounded-lg border border-blue-100"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                                {project.latestProgressUpdate?.workDescription && (
+                                    <p className="text-slate-600 text-[11px] line-clamp-1 italic">
+                                        "{project.latestProgressUpdate.workDescription}"
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Engineer Permission Actions */}
                         <div className="flex gap-2 pt-1">
                             <button
-                                onClick={() => openEditor(project)}
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                                onClick={() => openEditRequestModal(project)}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors cursor-pointer"
                             >
-                                <Edit3 className="w-4 h-4" /> Edit Info
+                                <Edit3 className="w-4 h-4" /> Request Edit
                             </button>
                             <button
                                 onClick={() => { setDeletionProject(project); setDeletionReason(''); }}
@@ -146,28 +260,137 @@ export default function EngineerProjects() {
                 ))}
             </div>
 
-            {/* Edit Modal */}
+            {/* Request Edit Modal */}
             {selectedProject && (
                 <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-                    <form onSubmit={saveChanges} className="w-full max-w-lg bg-white rounded-2xl p-6 space-y-4 text-xs">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-base font-bold text-slate-900">Edit {selectedProject.projectId}</h2>
+                    <form onSubmit={handleRequestEdit} className="w-full max-w-lg bg-white rounded-2xl p-6 space-y-4 text-xs max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-2 text-amber-700">
+                                <Edit3 className="w-5 h-5 shrink-0" />
+                                <h2 className="text-base font-bold text-slate-900">
+                                    Request Changes for {selectedProject.projectId}
+                                </h2>
+                            </div>
                             <button type="button" onClick={() => setSelectedProject(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <input required value={form.projectName} onChange={(event) => setForm({ ...form, projectName: event.target.value })} placeholder="Project name" className="w-full border border-slate-200 rounded-xl p-3" />
-                        <div className="grid grid-cols-2 gap-3">
-                            <input required value={form.village} onChange={(event) => setForm({ ...form, village: event.target.value })} placeholder="Village" className="w-full border border-slate-200 rounded-xl p-3" />
-                            <input required value={form.district} onChange={(event) => setForm({ ...form, district: event.target.value })} placeholder="District" className="w-full border border-slate-200 rounded-xl p-3" />
+
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
+                            <p className="font-bold">Engineer Project Change Request Workflow</p>
+                            <p className="text-[11px] text-amber-800">
+                                As an Engineer, proposed changes are submitted to the Administrator for approval with initial status <strong>PENDING</strong>. The changes take effect once approved.
+                            </p>
                         </div>
-                        <label className="block font-semibold">Current progress (%)
-                            <input type="number" min="0" max="100" required value={form.currentProgress} onChange={(event) => setForm({ ...form, currentProgress: event.target.value })} className="mt-1 w-full border border-slate-200 rounded-xl p-3" />
-                        </label>
-                        <textarea rows="4" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Project description" className="w-full border border-slate-200 rounded-xl p-3" />
-                        <div className="flex justify-end gap-2">
-                            <button type="button" onClick={() => setSelectedProject(null)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold cursor-pointer">Cancel</button>
-                            <button disabled={saving} className="px-4 py-2 rounded-xl bg-amber-600 text-white font-bold disabled:opacity-50 cursor-pointer">{saving ? 'Saving...' : 'Save Changes'}</button>
+
+                        <div>
+                            <label className="block font-semibold text-slate-700 mb-1">Project Name *</label>
+                            <input
+                                required
+                                value={form.projectName}
+                                onChange={(event) => setForm({ ...form, projectName: event.target.value })}
+                                placeholder="Project name"
+                                className="w-full border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block font-semibold text-slate-700 mb-1">Village *</label>
+                                <input
+                                    required
+                                    value={form.village}
+                                    onChange={(event) => setForm({ ...form, village: event.target.value })}
+                                    placeholder="Village"
+                                    className="w-full border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-semibold text-slate-700 mb-1">District *</label>
+                                <input
+                                    required
+                                    value={form.district}
+                                    onChange={(event) => setForm({ ...form, district: event.target.value })}
+                                    placeholder="District"
+                                    className="w-full border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block font-semibold text-slate-700 mb-1">Road Length (km)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={form.roadLength}
+                                    onChange={(event) => setForm({ ...form, roadLength: event.target.value })}
+                                    placeholder="e.g. 8.5"
+                                    className="w-full border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-semibold text-slate-700 mb-1">Allocated Budget (₹)</label>
+                                <input
+                                    type="number"
+                                    value={form.allocatedBudget}
+                                    onChange={(event) => setForm({ ...form, allocatedBudget: event.target.value })}
+                                    placeholder="e.g. 5000000"
+                                    className="w-full border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block font-semibold text-slate-700 mb-1">Expected Completion Date</label>
+                            <input
+                                type="date"
+                                value={form.expectedCompletion}
+                                onChange={(event) => setForm({ ...form, expectedCompletion: event.target.value })}
+                                className="w-full border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-semibold text-slate-700 mb-1">Description / Scope</label>
+                            <textarea
+                                rows="3"
+                                value={form.description}
+                                onChange={(event) => setForm({ ...form, description: event.target.value })}
+                                placeholder="Project description"
+                                className="w-full border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-semibold text-slate-800 mb-1">
+                                Reason for Change Request <span className="text-rose-500">*</span>
+                            </label>
+                            <textarea
+                                required
+                                rows="3"
+                                value={form.reason}
+                                onChange={(event) => setForm({ ...form, reason: event.target.value })}
+                                placeholder="Explain why these changes are needed (e.g. alignment corrected by survey, revised budget sanctioned by PWD)..."
+                                className="w-full border border-amber-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/40"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedProject(null)}
+                                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={saving || !form.reason.trim()}
+                                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold disabled:opacity-50 cursor-pointer transition-colors"
+                            >
+                                {saving ? 'Submitting...' : 'Submit Edit Request'}
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -176,8 +399,8 @@ export default function EngineerProjects() {
             {/* Deletion Request Modal */}
             {deletionProject && (
                 <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-                    <form onSubmit={handleRequestDeletion} className="w-full max-w-md bg-white rounded-2xl p-6 space-y-4 text-xs">
-                        <div className="flex items-center justify-between">
+                    <form onSubmit={handleRequestDeletion} className="w-full max-w-md bg-white rounded-2xl p-6 space-y-4 text-xs shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div className="flex items-center gap-2 text-rose-600">
                                 <AlertTriangle className="w-5 h-5 shrink-0" />
                                 <h2 className="text-base font-bold text-slate-900">Request Project Deletion</h2>
@@ -206,7 +429,7 @@ export default function EngineerProjects() {
                             />
                         </div>
 
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                             <button type="button" onClick={() => setDeletionProject(null)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold cursor-pointer">
                                 Cancel
                             </button>
@@ -215,7 +438,7 @@ export default function EngineerProjects() {
                                 disabled={requestingDeletion || !deletionReason.trim()}
                                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold disabled:opacity-50 transition-colors cursor-pointer"
                             >
-                                {requestingDeletion ? 'Submitting...' : 'Submit Request'}
+                                {requestingDeletion ? 'Submitting...' : 'Submit Deletion Request'}
                             </button>
                         </div>
                     </form>

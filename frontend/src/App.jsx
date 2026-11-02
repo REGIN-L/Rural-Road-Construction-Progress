@@ -39,6 +39,8 @@ import EngineerDashboard from './pages/EngineerDashboard';
 import EngineerProjects from './pages/EngineerProjects';
 import EngineerDeletionRequests from './pages/EngineerDeletionRequests';
 import ContractorDashboard from './pages/ContractorDashboard';
+import ContractorProjects from './pages/ContractorProjects';
+import ContractorCompletions from './pages/ContractorCompletions';
 
 // Public Query Pages
 import PublicQuerySubmit from './pages/PublicQuerySubmit';
@@ -90,6 +92,7 @@ export default function App() {
                         <Route path="reports" element={<AdminReports />} />
                         <Route path="users" element={<AdminUsers />} />
                         <Route path="deletion-requests" element={<AdminDeletionRequests />} />
+                        <Route path="change-requests" element={<AdminDeletionRequests />} />
                         <Route path="public-queries" element={<AdminPublicQueries />} />
                     </Route>
                 </Route>
@@ -101,6 +104,7 @@ export default function App() {
                         <Route path="dashboard" element={<EngineerDashboard />} />
                         <Route path="projects" element={<EngineerProjects />} />
                         <Route path="deletion-requests" element={<EngineerDeletionRequests />} />
+                        <Route path="change-requests" element={<EngineerDeletionRequests />} />
                         <Route path="projects/create" element={<CreateProject />} />
                     </Route>
                 </Route>
@@ -110,6 +114,8 @@ export default function App() {
                     <Route path="/contractor" element={<ContractorLayout />}>
                         <Route index element={<Navigate to="/contractor/dashboard" replace />} />
                         <Route path="dashboard" element={<ContractorDashboard />} />
+                        <Route path="projects" element={<ContractorProjects />} />
+                        <Route path="completions" element={<ContractorCompletions />} />
                     </Route>
                 </Route>
 

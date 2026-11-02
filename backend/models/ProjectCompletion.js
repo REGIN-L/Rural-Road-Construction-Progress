@@ -31,7 +31,17 @@ const projectCompletionSchema = new mongoose.Schema({
         default: '',
         trim: true
     },
+    completionPhoto: {
+        type: String,
+        default: '',
+        trim: true
+    },
     contractorRemarks: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    remarks: {
         type: String,
         default: '',
         trim: true
@@ -42,6 +52,21 @@ const projectCompletionSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
+});
+
+// Middleware to sync completionImage and completionPhoto
+projectCompletionSchema.pre('validate', function () {
+    if (this.completionImage && !this.completionPhoto) {
+        this.completionPhoto = this.completionImage;
+    } else if (this.completionPhoto && !this.completionImage) {
+        this.completionImage = this.completionPhoto;
+    }
+
+    if (this.contractorRemarks && !this.remarks) {
+        this.remarks = this.contractorRemarks;
+    } else if (this.remarks && !this.contractorRemarks) {
+        this.contractorRemarks = this.remarks;
+    }
 });
 
 module.exports = mongoose.model('ProjectCompletion', projectCompletionSchema);

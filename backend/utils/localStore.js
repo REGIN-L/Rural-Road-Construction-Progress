@@ -1,9 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+const isServerless = Boolean(
+    process.env.VERCEL || 
+    process.env.VERCEL_ENV || 
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.NOW_REGION
+);
+
+const DATA_DIR = isServerless ? path.join('/tmp', 'ruralconnect_data') : path.join(__dirname, '..', 'data');
 const DB_FILE = path.join(DATA_DIR, 'local_db.json');
+const BUNDLED_DB_FILE = path.join(__dirname, '..', 'data', 'local_db.json');
 
 const INITIAL_PROJECTS = [
     {
@@ -176,6 +185,10 @@ class LocalStore {
             if (fs.existsSync(DB_FILE)) {
                 const raw = fs.readFileSync(DB_FILE, 'utf8');
                 this.data = JSON.parse(raw);
+            } else if (isServerless && fs.existsSync(BUNDLED_DB_FILE)) {
+                const raw = fs.readFileSync(BUNDLED_DB_FILE, 'utf8');
+                this.data = JSON.parse(raw);
+                this.save();
             } else {
                 this.seedDefaultUsers();
                 this.save();
@@ -212,6 +225,18 @@ class LocalStore {
                 password: bcrypt.hashSync('Contractor@123', salt),
                 role: 'CONTRACTOR',
                 createdAt: new Date().toISOString()
+            },
+            {
+                _id: '6ae35de2aa61c21ada558a6e',
+                name: 'Ramesh Patel (Citizen)',
+                email: 'citizen@ruralconnect.gov.in',
+                password: bcrypt.hashSync('Citizen@123', salt),
+                role: 'PUBLIC',
+                village: 'Shivpur',
+                district: 'Varanasi',
+                state: 'Uttar Pradesh',
+                phone: '9876543210',
+                createdAt: new Date().toISOString()
             }
         ];
     }
@@ -237,6 +262,15 @@ class LocalStore {
         return this.data.users.find(u => String(u._id) === String(id));
     }
 
+    async matchPassword(enteredPassword, hashedPassword) {
+        try {
+            return await bcrypt.compare(enteredPassword, hashedPassword);
+        } catch (err) {
+            console.error('[LocalStore]: matchPassword error', err.message);
+            return false;
+        }
+    }
+
     async createUser({ name, email, password, role }) {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -253,12 +287,28 @@ class LocalStore {
         return newUser;
     }
 
-    async matchPassword(plainPassword, hashedPassword) {
-        return bcrypt.compare(plainPassword, hashedPassword);
+    getUsers() {
+        return (this.data.users || []).map(u => ({
+            _id: u._id,
+            id: u._id,
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            createdAt: u.createdAt,
+            assignedProjectsCount: (this.data.projects || []).filter(p => String(p.assignedEngineer) === String(u._id) || String(p.contractorId) === String(u._id)).length
+        }));
+    }
+
+    updateUserRole(id, role) {
+        const user = this.findUserById(id);
+        if (!user) return null;
+        user.role = role;
+        this.save();
+        return user;
     }
 
     getPublicProjects() {
-        return (this.data.projects || []).filter(p => p.isPublic !== false).map(p => ({
+        return (this.data.projects || []).map(p => ({
             _id: p._id,
             projectId: p.projectId,
             projectName: p.projectName,
@@ -277,27 +327,16 @@ class LocalStore {
             amountSpent: p.showFinancialData ? p.amountSpent : undefined,
             remainingBudget: p.showFinancialData ? Math.max(0, p.allocatedBudget - p.amountSpent) : undefined,
             contractor: p.showContractor ? p.contractor : undefined,
-            completion: p.completion || null
+            completion: p.completion || null,
+            latitude: p.latitude || p.coordinates?.lat || null,
+            longitude: p.longitude || p.coordinates?.lng || null,
+            coordinates: p.coordinates || (p.latitude != null && p.longitude != null ? { lat: p.latitude, lng: p.longitude, path: [] } : null),
+            isGeotagged: Boolean(p.isGeotagged || (p.latitude != null && p.longitude != null) || (p.coordinates?.lat != null && p.coordinates?.lng != null))
         }));
     }
 
     getAllProjects(user) {
-        let list = this.data.projects || [];
-        if (!user) return list;
-        if (user.role === 'ADMIN') return list;
-        if (user.role === 'ENGINEER') {
-            return list.filter(p => 
-                String(p.assignedEngineer) === String(user._id || user.id) || 
-                String(p.createdBy) === String(user._id || user.id)
-            );
-        }
-        if (user.role === 'CONTRACTOR') {
-            return list.filter(p => 
-                String(p.contractorId) === String(user._id || user.id) ||
-                (p.contractor && p.contractor.toLowerCase() === (user.name || '').toLowerCase())
-            );
-        }
-        return list;
+        return this.data.projects || [];
     }
 
     getProjectById(id) {
@@ -305,9 +344,42 @@ class LocalStore {
     }
 
     createProject(data, user) {
+        if (!this.data.projects) this.data.projects = [];
+
+        // Normalize status
+        const statusMap = {
+            'In Progress': 'Ongoing',
+            'IN_PROGRESS': 'Ongoing',
+            'Ongoing': 'Ongoing',
+            'Not Started': 'Planned',
+            'NOT_STARTED': 'Planned',
+            'Planned': 'Planned',
+            'On Track': 'Ongoing',
+            'ON_TRACK': 'Ongoing',
+            'Critical': 'Delayed',
+            'CRITICAL': 'Delayed',
+            'Delayed': 'Delayed',
+            'DELAYED': 'Delayed',
+            'Completed': 'Completed',
+            'COMPLETED': 'Completed'
+        };
+        const initialProgress = Number(data.currentProgress) || 0;
+        const initialStatus = statusMap[data.status] || (initialProgress >= 100 ? 'Completed' : (initialProgress > 0 ? 'Ongoing' : 'Planned'));
+
+        // Ensure unique projectId
+        let finalProjectId = data.projectId;
+        if (!finalProjectId || !String(finalProjectId).trim()) {
+            finalProjectId = `RC-${String(this.data.projects.length + 1).padStart(3, '0')}`;
+        }
+        let suffix = 1;
+        const baseId = finalProjectId;
+        while (this.data.projects.some(p => p.projectId === finalProjectId)) {
+            finalProjectId = `${baseId}-${suffix++}`;
+        }
+
         const newProj = {
             _id: 'proj_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-            projectId: data.projectId,
+            projectId: finalProjectId,
             projectName: data.projectName,
             village: data.village,
             district: data.district,
@@ -317,11 +389,11 @@ class LocalStore {
             amountSpent: Number(data.amountSpent) || 0,
             startDate: data.startDate,
             expectedCompletion: data.expectedCompletion,
-            currentProgress: Number(data.currentProgress) || 0,
+            currentProgress: initialProgress,
             contractor: data.contractor || 'Unassigned Contractor',
             contractorId: data.contractorId || null,
             description: data.description || '',
-            status: data.status || 'Planned',
+            status: initialStatus,
             isPublic: data.isPublic !== undefined ? Boolean(data.isPublic) : true,
             showContractor: data.showContractor !== undefined ? Boolean(data.showContractor) : true,
             showFinancialData: data.showFinancialData !== undefined ? Boolean(data.showFinancialData) : true,
@@ -330,9 +402,12 @@ class LocalStore {
             createdBy: user._id || user.id,
             creatorRole: user.role,
             completion: null,
+            latitude: data.latitude !== undefined ? data.latitude : null,
+            longitude: data.longitude !== undefined ? data.longitude : null,
+            coordinates: data.coordinates || null,
+            isGeotagged: Boolean(data.isGeotagged || (data.latitude != null && data.longitude != null)),
             createdAt: new Date().toISOString()
         };
-        if (!this.data.projects) this.data.projects = [];
         this.data.projects.unshift(newProj);
         this.save();
         return newProj;
@@ -421,16 +496,110 @@ class LocalStore {
         return reqItem;
     }
 
+    // Edit Requests
+    createEditRequest({ projectId, projectName, projectCode, requestedBy, requestedByRole, requestedChanges, reason }) {
+        if (!this.data.editRequests) this.data.editRequests = [];
+        const reqItem = {
+            _id: 'editreq_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            projectId,
+            projectName,
+            projectCode: projectCode || '',
+            requestedBy: {
+                _id: requestedBy._id || requestedBy.id,
+                name: requestedBy.name,
+                email: requestedBy.email,
+                role: requestedByRole || requestedBy.role
+            },
+            requestedByRole: requestedByRole || requestedBy.role,
+            requestedChanges,
+            reason,
+            status: 'Pending',
+            reviewedBy: null,
+            reviewedAt: null,
+            adminComment: '',
+            createdAt: new Date().toISOString()
+        };
+        this.data.editRequests.unshift(reqItem);
+        this.save();
+        return reqItem;
+    }
+
+    getEditRequests(user) {
+        if (!this.data.editRequests) this.data.editRequests = [];
+        if (!user || user.role === 'ADMIN') {
+            return this.data.editRequests;
+        }
+        return this.data.editRequests.filter(r => 
+            String(r.requestedBy?._id || r.requestedBy) === String(user._id || user.id)
+        );
+    }
+
+    getEditRequestById(id) {
+        if (!this.data.editRequests) this.data.editRequests = [];
+        return this.data.editRequests.find(r => String(r._id) === String(id));
+    }
+
+    approveEditRequest(id, adminComment, adminUser) {
+        const reqItem = this.getEditRequestById(id);
+        if (!reqItem) return null;
+
+        const project = this.getProjectById(reqItem.projectId);
+        if (project && reqItem.requestedChanges) {
+            Object.assign(project, reqItem.requestedChanges);
+            if (reqItem.requestedChanges.currentProgress !== undefined) {
+                const p = Number(reqItem.requestedChanges.currentProgress);
+                if (p >= 100) project.status = 'Completed';
+            }
+        }
+
+        reqItem.status = 'Approved';
+        reqItem.adminComment = adminComment || '';
+        reqItem.reviewedBy = {
+            _id: adminUser._id || adminUser.id,
+            name: adminUser.name,
+            email: adminUser.email
+        };
+        reqItem.reviewedAt = new Date().toISOString();
+        this.save();
+        return { editRequest: reqItem, project };
+    }
+
+    rejectEditRequest(id, adminComment, adminUser) {
+        const reqItem = this.getEditRequestById(id);
+        if (!reqItem) return null;
+
+        reqItem.status = 'Rejected';
+        reqItem.adminComment = adminComment || '';
+        reqItem.reviewedBy = {
+            _id: adminUser._id || adminUser.id,
+            name: adminUser.name,
+            email: adminUser.email
+        };
+        reqItem.reviewedAt = new Date().toISOString();
+        this.save();
+        return reqItem;
+    }
+
     // Completion
-    submitCompletion(projectId, { completionPercentage, completionDate, completionDescription, completionImage, contractorRemarks }, user) {
+    submitCompletion(projectId, { completionPercentage, completionDate, completionDescription, completionImage, completionPhoto, contractorRemarks, remarks }, user) {
         const project = this.getProjectById(projectId);
         if (!project) return null;
 
-        const perc = Number(completionPercentage);
-        if (perc >= 100) {
-            project.status = 'Completed';
-            project.currentProgress = 100;
+        const photo = (completionPhoto || completionImage || '').trim();
+        const desc = (completionDescription || '').trim();
+        const finalRemarks = (contractorRemarks || remarks || '').trim();
+
+        project.status = 'Completed';
+        project.currentProgress = 100;
+        if (photo) {
+            project.latestProgressPhoto = photo;
         }
+        project.latestProgressUpdate = {
+            progress: 100,
+            workDescription: desc,
+            photoUrl: photo,
+            updatedAt: new Date().toISOString()
+        };
 
         const completionRecord = {
             _id: 'comp_' + Date.now(),
@@ -440,26 +609,40 @@ class LocalStore {
                 name: user.name,
                 email: user.email
             },
-            completionPercentage: perc,
-            completionDate,
-            completionDescription,
-            completionImage: completionImage || '',
-            contractorRemarks: contractorRemarks || '',
+            completionPercentage: 100,
+            completionDate: completionDate || new Date().toISOString(),
+            completionDescription: desc,
+            completionImage: photo,
+            completionPhoto: photo,
+            contractorRemarks: finalRemarks,
             submittedAt: new Date().toISOString()
         };
 
         project.completion = {
-            completionPercentage: perc,
-            completionDate,
-            completionDescription,
-            completionImage: completionImage || '',
-            contractorRemarks: contractorRemarks || '',
+            completionPercentage: 100,
+            completionDate: completionRecord.completionDate,
+            completionDescription: desc,
+            completionImage: photo,
+            completionPhoto: photo,
+            contractorRemarks: finalRemarks,
             submittedBy: user._id || user.id,
             submittedAt: completionRecord.submittedAt
         };
 
         if (!this.data.completions) this.data.completions = [];
         this.data.completions.push(completionRecord);
+
+        // Also add historical 100% progress update
+        this.addProgressUpdate(projectId, {
+            progress: 100,
+            progressPercentage: 100,
+            workDescription: `Project Completed: ${desc}`,
+            notes: `Project Completed: ${desc}`,
+            photoUrl: photo,
+            remarks: finalRemarks,
+            isPublic: true
+        }, user);
+
         this.save();
         return { project, completion: completionRecord };
     }
@@ -470,30 +653,58 @@ class LocalStore {
             return project.completion;
         }
         if (!this.data.completions) return null;
-        return this.data.completions.find(c => String(c.projectId) === String(projectId)) || null;
+        const targetIds = project ? [String(project._id), String(project.projectId)] : [String(projectId)];
+        return this.data.completions.find(c => targetIds.includes(String(c.projectId))) || null;
     }
 
     // Public Queries
-    createPublicQuery({ name, contactInfo, queryType, state, district, location, description, image, projectId }) {
+    createPublicQuery({ name, contactInfo, queryType, requestType, roadName, startPoint, endPoint, reason, urgency, state, district, location, village, description, image, projectId, submittedByUserId }) {
         if (!this.data.publicQueries) this.data.publicQueries = [];
         const year = new Date().getFullYear();
-        const count = this.data.publicQueries.length + 1;
-        const queryId = `RCQ-${year}-${String(count).padStart(4, '0')}`;
+        const prefix = `RCQ-${year}-`;
+
+        let maxNum = 0;
+        this.data.publicQueries.forEach(q => {
+            const m = q.queryId && q.queryId.match(/RCQ-\d{4}-(\d+)/);
+            if (m) {
+                const num = parseInt(m[1], 10);
+                if (!isNaN(num) && num > maxNum) maxNum = num;
+            }
+        });
+
+        let nextNum = maxNum + 1;
+        let queryId = `${prefix}${String(nextNum).padStart(4, '0')}`;
+        while (this.data.publicQueries.some(q => q.queryId === queryId)) {
+            nextNum++;
+            queryId = `${prefix}${String(nextNum).padStart(4, '0')}`;
+        }
 
         const newQuery = {
             _id: 'query_' + Date.now(),
             queryId,
             name,
             contactInfo: contactInfo || '',
-            queryType,
-            state,
+            queryType: queryType || (requestType === 'NEW_ROAD_REQUEST' ? 'Request New Road' : 'General Feedback'),
+            requestType: requestType || 'FEEDBACK',
+            roadName: roadName || '',
+            startPoint: startPoint || '',
+            endPoint: endPoint || '',
+            reason: reason || '',
+            urgency: urgency || 'Medium',
+            state: state || 'Tamil Nadu',
             district,
-            location,
+            location: location || village || '',
+            village: village || location || '',
             description,
             image: image || '',
-            status: 'Pending',
+            status: 'Submitted',
             adminResponse: '',
             projectId: projectId || null,
+            submittedByUserId: (submittedByUserId && mongoose.Types.ObjectId.isValid(submittedByUserId))
+                ? String(submittedByUserId)
+                : (submittedByUserId === 'user_citizen' ? '6ae35de2aa61c21ada558a6e' : null),
+            isApprovedForProject: false,
+            createdProjectId: null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -503,13 +714,20 @@ class LocalStore {
         return newQuery;
     }
 
-    getPublicQueries({ status, queryType, queryId } = {}) {
+    getPublicQueries({ status, queryType, queryId, requestType } = {}) {
         let list = this.data.publicQueries || [];
         if (status && status !== 'All') {
-            list = list.filter(q => q.status === status);
+            if (status === 'Submitted' || status === 'Pending') {
+                list = list.filter(q => q.status === 'Submitted' || q.status === 'Pending');
+            } else {
+                list = list.filter(q => q.status === status);
+            }
         }
         if (queryType && queryType !== 'All') {
             list = list.filter(q => q.queryType === queryType);
+        }
+        if (requestType && requestType !== 'All') {
+            list = list.filter(q => q.requestType === requestType);
         }
         if (queryId) {
             list = list.filter(q => q.queryId.toLowerCase().includes(queryId.toLowerCase()));
@@ -533,35 +751,68 @@ class LocalStore {
         return query;
     }
 
-    addProgressUpdate(projectId, { progress, notes, isPublic = true }, user) {
+    addProgressUpdate(projectId, { progress, progressPercentage, workDescription, notes, photoUrl, remarks, isPublic = true, amountSpent }, user) {
         const project = this.getProjectById(projectId);
         if (!project) return null;
 
-        project.currentProgress = Number(progress);
-        if (project.currentProgress >= 100) {
+        const perc = Number(progressPercentage !== undefined ? progressPercentage : progress);
+        const desc = (workDescription || notes || '').trim();
+        const photo = (photoUrl || '').trim();
+
+        project.currentProgress = perc;
+        if (perc >= 100) {
             project.status = 'Completed';
-        } else if (project.currentProgress > 0) {
+        } else if (perc > 0 && (project.status === 'Planned' || project.status === 'NOT_STARTED')) {
             project.status = 'Ongoing';
+        }
+
+        if (photo) {
+            project.latestProgressPhoto = photo;
+        }
+
+        project.latestProgressUpdate = {
+            progress: perc,
+            workDescription: desc,
+            photoUrl: photo,
+            updatedAt: new Date().toISOString()
+        };
+
+        if (amountSpent !== undefined) {
+            project.amountSpent = Number(amountSpent);
         }
 
         const update = {
             _id: 'upd_' + Date.now(),
             projectId: project._id,
-            currentProgress: Number(progress),
-            notes: notes || '',
+            progress: perc,
+            progressPercentage: perc,
+            workDescription: desc,
+            notes: desc,
+            photoUrl: photo,
+            remarks: remarks || '',
+            amountSpent: project.amountSpent,
             isPublic,
             updatedBy: {
                 id: user._id || user.id,
                 name: user.name,
                 role: user.role
             },
+            contractorId: user.role === 'CONTRACTOR' ? (user._id || user.id) : (project.contractorId || null),
+            contractorName: user.role === 'CONTRACTOR' ? user.name : (project.contractor || ''),
             createdAt: new Date().toISOString()
         };
 
         if (!this.data.updates) this.data.updates = [];
-        this.data.updates.push(update);
+        this.data.updates.unshift(update);
         this.save();
         return { project, update };
+    }
+
+    getProgressUpdates(projectId) {
+        if (!this.data.updates) this.data.updates = [];
+        const project = this.getProjectById(projectId);
+        const targetIds = project ? [String(project._id), String(project.projectId)] : [String(projectId)];
+        return this.data.updates.filter(u => targetIds.includes(String(u.projectId)));
     }
 }
 

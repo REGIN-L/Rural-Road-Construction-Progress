@@ -11,6 +11,7 @@ const { protect, adminOnly, engineerOrAdmin } = require('../middleware/auth');
 router.use(protect);
 
 router.get('/', engineerOrAdmin, getDeletionRequests);
+router.get('/my', engineerOrAdmin, getDeletionRequests);
 router.post('/', engineerOrAdmin, createDeletionRequest);
 router.put('/:id/approve', adminOnly, approveDeletionRequest);
 router.put('/:id/reject', adminOnly, rejectDeletionRequest);

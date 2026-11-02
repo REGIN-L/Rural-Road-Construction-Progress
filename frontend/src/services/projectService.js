@@ -84,6 +84,32 @@ export const rejectDeletionRequest = async (id, adminResponse) => {
     return res.data;
 };
 
+// Edit / Change Requests
+export const requestProjectEdit = async (projectId, { requestedChanges, reason }) => {
+    const res = await API.post('/project-edit-requests', { projectId, requestedChanges, reason });
+    return res.data;
+};
+
+export const getEditRequests = async () => {
+    const res = await API.get('/project-edit-requests');
+    return res.data;
+};
+
+export const getMyEditRequests = async () => {
+    const res = await API.get('/project-edit-requests/my');
+    return res.data;
+};
+
+export const approveEditRequest = async (id, adminComment) => {
+    const res = await API.put(`/project-edit-requests/${id}/approve`, { adminComment });
+    return res.data;
+};
+
+export const rejectEditRequest = async (id, adminComment) => {
+    const res = await API.put(`/project-edit-requests/${id}/reject`, { adminComment });
+    return res.data;
+};
+
 // Image Upload
 export const uploadImage = async (file) => {
     const formData = new FormData();
@@ -128,5 +154,11 @@ export const updatePublicQueryStatus = async (id, status, adminResponse) => {
 // Admin – save an admin response to a public query
 export const respondToPublicQuery = async (id, adminResponse, status) => {
     const res = await API.put(`/public-queries/${id}/response`, { adminResponse, status });
+    return res.data;
+};
+
+// Admin – convert an approved citizen road request into an official project
+export const convertQueryToProject = async (queryId, projectData) => {
+    const res = await API.post(`/public-queries/${queryId}/convert-to-project`, projectData);
     return res.data;
 };

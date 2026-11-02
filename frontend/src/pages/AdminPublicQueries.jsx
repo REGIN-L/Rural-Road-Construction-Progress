@@ -1,18 +1,19 @@
-﻿import React, { useEffect, useState } from 'react';
-import { MessageSquare, Search, Eye, CheckCircle, XCircle, Clock, RefreshCw, Send, MapPin, User, Calendar, Tag, X } from 'lucide-react';
-import { getPublicQueries, updatePublicQueryStatus, respondToPublicQuery } from '../services/projectService';
+import React, { useEffect, useState } from 'react';
+import { MessageSquare, Search, Eye, CheckCircle, XCircle, Clock, RefreshCw, Send, MapPin, User, Calendar, Tag, X, Plus } from 'lucide-react';
+import { getPublicQueries, updatePublicQueryStatus, respondToPublicQuery, convertQueryToProject } from '../services/projectService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDate } from '../utils/formatters';
 
 const STATUS_STYLES = {
+    Submitted: { bg: 'bg-amber-50 text-amber-800 border-amber-200', icon: Clock },
     Pending: { bg: 'bg-amber-50 text-amber-800 border-amber-200', icon: Clock },
     'Under Review': { bg: 'bg-blue-50 text-blue-800 border-blue-200', icon: Eye },
     'In Progress': { bg: 'bg-violet-50 text-violet-800 border-violet-200', icon: RefreshCw },
     Resolved: { bg: 'bg-emerald-50 text-emerald-800 border-emerald-200', icon: CheckCircle },
     Rejected: { bg: 'bg-rose-50 text-rose-800 border-rose-200', icon: XCircle }
 };
-const VALID_STATUSES = ['Pending', 'Under Review', 'In Progress', 'Resolved', 'Rejected'];
-const QUERY_TYPES = ['All', 'Road Damage', 'Fund Misuse', 'Incomplete Work', 'Project Delay', 'Quality Issue', 'Other'];
+const VALID_STATUSES = ['Submitted', 'Pending', 'Under Review', 'In Progress', 'Resolved', 'Rejected'];
+const QUERY_TYPES = ['All', 'Road Damage', 'Poor Construction Quality', 'Delayed Work', 'Drainage Problem', 'Safety Concern', 'Request New Road', 'Other'];
 
 function StatusBadgeSmall({ status }) {
     const style = STATUS_STYLES[status] || STATUS_STYLES.Pending;
@@ -30,6 +31,19 @@ function QueryDetailModal({ query, onClose, onSave }) {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
+    // Official Project Conversion
+    const [showConvert, setShowConvert] = useState(false);
+    const [convertData, setConvertData] = useState({
+        projectId: `RC-${Date.now().toString().slice(-4)}`,
+        projectName: query.roadName || `${query.location || query.village} Village Road`,
+        roadLength: 5.0,
+        allocatedBudget: 25000000,
+        contractor: 'Unassigned Contractor'
+    });
+    const [converting, setConverting] = useState(false);
+
+    const isRoadRequest = query.requestType === 'NEW_ROAD_REQUEST' || query.queryType === 'Request New Road';
+
     const handleSave = async () => {
         try {
             setSaving(true);
@@ -41,13 +55,30 @@ function QueryDetailModal({ query, onClose, onSave }) {
         } finally { setSaving(false); }
     };
 
+    const handleCreateOfficialProject = async (e) => {
+        e.preventDefault();
+        try {
+            setConverting(true);
+            await convertQueryToProject(query._id, convertData);
+            alert(`Official project created successfully! Query status marked as Resolved.`);
+            onSave();
+            onClose();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to convert query into official project.');
+        } finally {
+            setConverting(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="bg-slate-900 px-6 py-4 flex items-center justify-between shrink-0">
                     <div>
-                        <h2 className="text-base font-bold text-white font-['Space_Grotesk']">Query: {query.queryId}</h2>
-                        <p className="text-xs text-slate-400 mt-0.5">{query.queryType} — {query.location}, {query.district}</p>
+                        <h2 className="text-base font-bold text-white font-['Space_Grotesk']">
+                            {isRoadRequest ? 'Road Project Proposal' : 'Citizen Grievance'}: {query.queryId}
+                        </h2>
+                        <p className="text-xs text-slate-400 mt-0.5">{query.roadName || query.queryType} — {query.location || query.village}, {query.district}</p>
                     </div>
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
@@ -60,30 +91,128 @@ function QueryDetailModal({ query, onClose, onSave }) {
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1">
                             <span className="text-slate-400 font-semibold uppercase tracking-wide text-[10px]">Location</span>
-                            <p className="font-bold text-slate-800 flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {query.location}</p>
+                            <p className="font-bold text-slate-800 flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {query.location || query.village}</p>
                             <p className="text-slate-500">{query.district}, {query.state}</p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1">
-                            <span className="text-slate-400 font-semibold uppercase tracking-wide text-[10px]">Query Type</span>
-                            <p className="font-bold text-slate-800 flex items-center gap-1"><Tag className="w-3.5 h-3.5 text-slate-400" /> {query.queryType}</p>
+                            <span className="text-slate-400 font-semibold uppercase tracking-wide text-[10px]">Submission Type</span>
+                            <p className="font-bold text-slate-800 flex items-center gap-1"><Tag className="w-3.5 h-3.5 text-slate-400" /> {isRoadRequest ? 'New Road Proposal' : query.queryType}</p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1">
                             <span className="text-slate-400 font-semibold uppercase tracking-wide text-[10px]">Submitted On</span>
                             <p className="font-bold text-slate-800 flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {formatDate(query.createdAt)}</p>
                         </div>
                     </div>
+
+                    {query.projectId && (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs space-y-1">
+                            <span className="text-emerald-700 font-bold uppercase tracking-wide text-[10px]">Linked Project</span>
+                            <p className="font-bold text-emerald-900">{query.projectId.projectName} ({query.projectId.projectId})</p>
+                        </div>
+                    )}
+
                     <div>
-                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Citizen Description</h3>
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Description / Reason</h3>
                         <p className="text-sm text-slate-700 bg-slate-50 border border-slate-100 rounded-xl p-4 leading-relaxed">{query.description}</p>
                     </div>
+
                     {query.image && (
                         <div>
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Attached Evidence</h3>
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Attached Photograph</h3>
                             <img src={query.image.startsWith('http') ? query.image : `http://localhost:5000${query.image}`} alt="Query evidence" className="w-full max-h-64 object-cover rounded-xl border border-slate-200" onError={(e) => { e.target.style.display = 'none'; }} />
                         </div>
                     )}
+
+                    {/* Official Project Creation for Road Requests */}
+                    {isRoadRequest && !query.isApprovedForProject && (
+                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h4 className="text-xs font-bold text-emerald-900">Approve & Sanction Official Project</h4>
+                                    <p className="text-[11px] text-emerald-700">Admins can approve this public request and create a sanctioned construction project in the database.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConvert(!showConvert)}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
+                                >
+                                    {showConvert ? 'Hide' : 'Sanction Project'}
+                                </button>
+                            </div>
+
+                            {showConvert && (
+                                <form onSubmit={handleCreateOfficialProject} className="space-y-3 pt-2 text-xs border-t border-emerald-200">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-slate-700 font-semibold mb-1">Project ID</label>
+                                            <input
+                                                required
+                                                value={convertData.projectId}
+                                                onChange={e => setConvertData({ ...convertData, projectId: e.target.value })}
+                                                className="w-full bg-white border border-emerald-300 rounded-lg p-2 font-mono text-xs text-slate-900"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-slate-700 font-semibold mb-1">Road Length (km)</label>
+                                            <input
+                                                required
+                                                type="number"
+                                                step="0.1"
+                                                value={convertData.roadLength}
+                                                onChange={e => setConvertData({ ...convertData, roadLength: e.target.value })}
+                                                className="w-full bg-white border border-emerald-300 rounded-lg p-2 text-xs text-slate-900"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-700 font-semibold mb-1">Project Name</label>
+                                        <input
+                                            required
+                                            value={convertData.projectName}
+                                            onChange={e => setConvertData({ ...convertData, projectName: e.target.value })}
+                                            className="w-full bg-white border border-emerald-300 rounded-lg p-2 text-xs text-slate-900"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-slate-700 font-semibold mb-1">Budget (₹)</label>
+                                            <input
+                                                required
+                                                type="number"
+                                                value={convertData.allocatedBudget}
+                                                onChange={e => setConvertData({ ...convertData, allocatedBudget: e.target.value })}
+                                                className="w-full bg-white border border-emerald-300 rounded-lg p-2 text-xs text-slate-900"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-slate-700 font-semibold mb-1">Contractor</label>
+                                            <input
+                                                value={convertData.contractor}
+                                                onChange={e => setConvertData({ ...convertData, contractor: e.target.value })}
+                                                className="w-full bg-white border border-emerald-300 rounded-lg p-2 text-xs text-slate-900"
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={converting}
+                                        className="w-full py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+                                    >
+                                        <Plus className="w-4 h-4" /> {converting ? 'Creating Project...' : 'Create Official Project in MongoDB'}
+                                    </button>
+                                </form>
+                            )}
+                        </div>
+                    )}
+
+                    {query.isApprovedForProject && query.createdProjectId && (
+                        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold">
+                            ✓ Official project sanctioned and created: {query.createdProjectId.projectName} ({query.createdProjectId.projectId})
+                        </div>
+                    )}
+
                     <div className="border-t border-slate-200 pt-4 space-y-4">
-                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Admin Response &amp; Status Update</h3>
+                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Status Update & Official Response</h3>
                         <div>
                             <label className="text-xs font-semibold text-slate-700 mb-1 block">Update Status</label>
                             <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer">
@@ -91,8 +220,8 @@ function QueryDetailModal({ query, onClose, onSave }) {
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-slate-700 mb-1 block">Admin Response</label>
-                            <textarea rows="4" value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} placeholder="Provide a response to the citizen. This will be visible when they track their query..." className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+                            <label className="text-xs font-semibold text-slate-700 mb-1 block">Official Response to Citizen</label>
+                            <textarea rows="4" value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} placeholder="Provide an official response to the citizen. This will be visible when they track their query..." className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
                         </div>
                     </div>
                 </div>
@@ -136,6 +265,7 @@ export default function AdminPublicQueries() {
         search === '' ||
         (q.queryId || '').toLowerCase().includes(search.toLowerCase()) ||
         (q.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (q.roadName || '').toLowerCase().includes(search.toLowerCase()) ||
         (q.location || '').toLowerCase().includes(search.toLowerCase()) ||
         (q.district || '').toLowerCase().includes(search.toLowerCase()) ||
         (q.description || '').toLowerCase().includes(search.toLowerCase())
@@ -151,118 +281,119 @@ export default function AdminPublicQueries() {
         }
     };
 
-    if (loading) return <LoadingSpinner text="Loading citizen public queries..." />;
-
-    const counts = {
-        total: queries.length,
-        pending: queries.filter(q => q.status === 'Pending').length,
-        inProgress: queries.filter(q => ['Under Review', 'In Progress'].includes(q.status)).length,
-        resolved: queries.filter(q => q.status === 'Resolved').length,
-    };
-
     return (
         <div className="space-y-6">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900 font-['Space_Grotesk'] flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-violet-600" /> Public Citizen Queries
+                    <h1 className="text-2xl font-extrabold text-slate-900 font-['Space_Grotesk'] flex items-center gap-2">
+                        <MessageSquare className="w-6 h-6 text-emerald-600" /> Public Queries &amp; Road Requests
                     </h1>
-                    <p className="text-xs text-slate-500 mt-1">Review, respond to, and resolve road condition reports submitted by citizens.</p>
+                    <p className="text-xs text-slate-500 mt-1">Review citizen grievances, road damage complaints, and requests for new village road projects.</p>
                 </div>
-                <button onClick={loadQueries} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer">
+                <button onClick={loadQueries} className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto">
                     <RefreshCw className="w-3.5 h-3.5" /> Refresh
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                    { label: 'Total Queries', value: counts.total, color: 'border-l-slate-600', text: 'text-slate-800' },
-                    { label: 'Pending', value: counts.pending, color: 'border-l-amber-500', text: 'text-amber-700' },
-                    { label: 'In Progress', value: counts.inProgress, color: 'border-l-blue-500', text: 'text-blue-700' },
-                    { label: 'Resolved', value: counts.resolved, color: 'border-l-emerald-500', text: 'text-emerald-700' },
-                ].map(stat => (
-                    <div key={stat.label} className={`custom-card p-4 border-l-4 ${stat.color}`}>
-                        <p className="text-[11px] text-slate-500 font-medium">{stat.label}</p>
-                        <p className={`text-2xl font-extrabold font-['Space_Grotesk'] ${stat.text}`}>{stat.value}</p>
-                    </div>
-                ))}
-            </div>
-
             {alertMsg && (
-                <div className={`p-3 rounded-xl text-xs font-medium flex items-center justify-between ${alertMsg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                <div className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between ${alertMsg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
                     <span>{alertMsg.text}</span>
-                    <button onClick={() => setAlertMsg(null)} className="font-bold hover:underline cursor-pointer">Dismiss</button>
+                    <button onClick={() => setAlertMsg(null)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="custom-card p-2.5 flex items-center gap-2 flex-1">
-                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                    <input type="text" placeholder="Search by query ID, name, location..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-transparent text-xs text-slate-900 focus:outline-none" />
-                    {search && <button onClick={() => setSearch('')} className="cursor-pointer text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>}
-                </div>
-                <div className="flex items-center gap-2">
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer">
-                        {['All', ...VALID_STATUSES].map(s => <option key={s} value={s}>{s === 'All' ? 'All Statuses' : s}</option>)}
-                    </select>
-                    <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer">
-                        {QUERY_TYPES.map(t => <option key={t} value={t}>{t === 'All' ? 'All Types' : t}</option>)}
-                    </select>
+            {/* Filter Bar */}
+            <div className="custom-card p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                            type="text"
+                            placeholder="Search by Query ID, citizen name, location, road name..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                        >
+                            <option value="All">All Statuses</option>
+                            {VALID_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <select
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                        >
+                            <option value="All">All Types</option>
+                            {QUERY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            {filteredQueries.length === 0 ? (
-                <div className="custom-card p-12 text-center space-y-3">
-                    <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
-                    <p className="font-bold text-slate-700">No queries found</p>
-                    <p className="text-xs text-slate-500">No citizen queries match your current filter criteria.</p>
+            {/* Query Table */}
+            {loading ? (
+                <LoadingSpinner text="Loading public queries..." />
+            ) : filteredQueries.length === 0 ? (
+                <div className="custom-card p-12 text-center text-slate-400 space-y-2">
+                    <MessageSquare className="w-10 h-10 mx-auto text-slate-300" />
+                    <p className="text-sm font-semibold">No queries found</p>
+                    <p className="text-xs text-slate-400">Try adjusting your filters or search term.</p>
                 </div>
             ) : (
                 <div className="custom-card overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                            <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50">
-                                    <th className="text-left px-4 py-3 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Query ID</th>
-                                    <th className="text-left px-4 py-3 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Citizen</th>
-                                    <th className="text-left px-4 py-3 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Type</th>
-                                    <th className="text-left px-4 py-3 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Location</th>
-                                    <th className="text-left px-4 py-3 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Status</th>
-                                    <th className="text-left px-4 py-3 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Date</th>
-                                    <th className="text-right px-4 py-3 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Actions</th>
+                        <table className="w-full text-left text-xs text-slate-600">
+                            <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-700 uppercase tracking-wide text-[10px]">
+                                <tr>
+                                    <th className="py-3 px-4">Query ID</th>
+                                    <th className="py-3 px-4">Citizen</th>
+                                    <th className="py-3 px-4">Type / Road Name</th>
+                                    <th className="py-3 px-4">Location</th>
+                                    <th className="py-3 px-4">Date</th>
+                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                                 {filteredQueries.map(q => (
-                                    <tr key={q._id} className="hover:bg-slate-50/80 transition-colors">
-                                        <td className="px-4 py-3"><span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">{q.queryId}</span></td>
-                                        <td className="px-4 py-3">
-                                            <p className="font-semibold text-slate-800">{q.name}</p>
-                                            {q.contactInfo && <p className="text-slate-400 text-[10px]">{q.contactInfo}</p>}
+                                    <tr key={q._id} className="hover:bg-slate-50/70 transition-colors">
+                                        <td className="py-3.5 px-4 font-mono font-bold text-emerald-800">
+                                            {q.queryId}
                                         </td>
-                                        <td className="px-4 py-3"><span className="bg-violet-50 text-violet-700 border border-violet-100 px-2 py-0.5 rounded font-medium text-[10px]">{q.queryType}</span></td>
-                                        <td className="px-4 py-3 text-slate-600">
-                                            <p>{q.location}</p>
-                                            <p className="text-slate-400 text-[10px]">{q.district}, {q.state}</p>
+                                        <td className="py-3.5 px-4 font-semibold text-slate-800">
+                                            {q.name}
                                         </td>
-                                        <td className="px-4 py-3"><StatusBadgeSmall status={q.status} /></td>
-                                        <td className="px-4 py-3 text-slate-500">{formatDate(q.createdAt)}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-end gap-1">
-                                                {q.status === 'Pending' && (
-                                                    <button onClick={() => handleQuickStatus(q, 'Under Review')} className="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold cursor-pointer transition-colors text-[10px]">Review</button>
-                                                )}
-                                                <button onClick={() => setSelectedQuery(q)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold cursor-pointer transition-colors">
-                                                    <Eye className="w-3 h-3" /> View
-                                                </button>
-                                            </div>
+                                        <td className="py-3.5 px-4 font-medium text-slate-700">
+                                            {q.roadName || q.queryType}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-slate-500">
+                                            {q.location || q.village}, {q.district}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-slate-400">
+                                            {formatDate(q.createdAt)}
+                                        </td>
+                                        <td className="py-3.5 px-4">
+                                            <StatusBadgeSmall status={q.status} />
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right">
+                                            <button
+                                                onClick={() => setSelectedQuery(q)}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-colors cursor-pointer"
+                                            >
+                                                <Eye className="w-3.5 h-3.5" /> Review
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                    <div className="px-4 py-3 border-t border-slate-100 text-[11px] text-slate-400">Showing {filteredQueries.length} of {queries.length} queries</div>
                 </div>
             )}
 
@@ -270,7 +401,7 @@ export default function AdminPublicQueries() {
                 <QueryDetailModal
                     query={selectedQuery}
                     onClose={() => setSelectedQuery(null)}
-                    onSave={() => { setSelectedQuery(null); loadQueries(); setAlertMsg({ type: 'success', text: 'Query response saved successfully.' }); }}
+                    onSave={() => { setSelectedQuery(null); loadQueries(); }}
                 />
             )}
         </div>

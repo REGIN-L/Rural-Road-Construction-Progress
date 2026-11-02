@@ -1,29 +1,37 @@
+const mongoose = require('mongoose');
 const Project = require('../models/Project');
+const localStore = require('../utils/localStore');
 
 // @desc    Get dashboard metrics & analytics
 // @route   GET /api/dashboard/stats
 // @access  Private (Admin / Engineer)
 exports.getDashboardStats = async (req, res, next) => {
     try {
-        let filter = {};
-        if (req.user.role === 'ENGINEER') {
-            filter.assignedEngineer = req.user.id;
+        const isMongo = mongoose.connection.readyState === 1;
+        let projects = [];
+
+        if (isMongo) {
+            let filter = {};
+            if (req.user.role === 'ENGINEER') {
+                filter.assignedEngineer = req.user.id;
+            }
+            projects = await Project.find(filter);
+        } else {
+            projects = localStore.getAllProjects(req.user);
         }
 
-        const projects = await Project.find(filter);
-
         const totalProjects = projects.length;
-        const activeProjects = projects.filter(p => p.status === 'ON_TRACK').length;
-        const completedProjects = projects.filter(p => p.status === 'COMPLETED').length;
-        const delayedProjects = projects.filter(p => p.status === 'DELAYED').length;
-        const criticalProjects = projects.filter(p => p.status === 'CRITICAL').length;
+        const activeProjects = projects.filter(p => p.status === 'In Progress' || p.status === 'ON_TRACK' || p.status === 'Ongoing').length;
+        const completedProjects = projects.filter(p => p.status === 'Completed' || p.status === 'COMPLETED').length;
+        const delayedProjects = projects.filter(p => p.status === 'Delayed' || p.status === 'DELAYED').length;
+        const criticalProjects = projects.filter(p => p.status === 'Critical' || p.status === 'CRITICAL').length;
 
-        const totalBudget = projects.reduce((acc, p) => acc + p.allocatedBudget, 0);
-        const totalSpent = projects.reduce((acc, p) => acc + p.amountSpent, 0);
+        const totalBudget = projects.reduce((acc, p) => acc + (p.allocatedBudget || 0), 0);
+        const totalSpent = projects.reduce((acc, p) => acc + (p.amountSpent || 0), 0);
         const remainingBudget = Math.max(0, totalBudget - totalSpent);
         const fundUtilization = totalBudget > 0 ? parseFloat(((totalSpent / totalBudget) * 100).toFixed(1)) : 0;
 
-        const totalProgressSum = projects.reduce((acc, p) => acc + p.currentProgress, 0);
+        const totalProgressSum = projects.reduce((acc, p) => acc + (p.currentProgress || 0), 0);
         const avgProgress = totalProjects > 0 ? parseFloat((totalProgressSum / totalProjects).toFixed(1)) : 0;
 
         // Chart 1: Status Donut Chart

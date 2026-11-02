@@ -1,27 +1,38 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Project = require('../models/Project');
+const localStore = require('../utils/localStore');
 
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private (Admin Only)
 exports.getUsers = async (req, res, next) => {
     try {
-        const users = await User.find().select('-password').sort({ createdAt: -1 });
+        if (mongoose.connection.readyState === 1) {
+            const users = await User.find().select('-password').sort({ createdAt: -1 });
 
-        // Populate assigned projects count
-        const usersWithProjects = await Promise.all(users.map(async (user) => {
-            const assignedCount = await Project.countDocuments({ assignedEngineer: user._id });
-            return {
-                ...user.toObject(),
-                assignedProjectsCount: assignedCount
-            };
-        }));
+            // Populate assigned projects count
+            const usersWithProjects = await Promise.all(users.map(async (user) => {
+                const assignedCount = await Project.countDocuments({ assignedEngineer: user._id });
+                return {
+                    ...user.toObject(),
+                    assignedProjectsCount: assignedCount
+                };
+            }));
 
-        res.json({
-            success: true,
-            count: usersWithProjects.length,
-            data: usersWithProjects
-        });
+            return res.json({
+                success: true,
+                count: usersWithProjects.length,
+                data: usersWithProjects
+            });
+        } else {
+            const users = localStore.getUsers();
+            return res.json({
+                success: true,
+                count: users.length,
+                data: users
+            });
+        }
     } catch (error) {
         next(error);
     }

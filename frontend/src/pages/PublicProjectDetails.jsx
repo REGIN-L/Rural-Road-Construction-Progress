@@ -11,7 +11,10 @@ import {
     CheckCircle2,
     ShieldCheck,
     HardHat,
-    MessageSquare
+    MessageSquare,
+    Award,
+    Image as ImageIcon,
+    TrendingUp
 } from 'lucide-react';
 import { getPublicProjectById } from '../services/projectService';
 import StatusBadge from '../components/StatusBadge';
@@ -150,6 +153,38 @@ export default function PublicProjectDetails() {
                 <ProgressBar progress={project.currentProgress} size="lg" />
             </div>
 
+            {/* Progress Update Timeline (public updates only) */}
+            {project.timeline && project.timeline.filter(u => u.isPublic !== false).length > 0 && (
+                <div className="custom-card p-6 space-y-4">
+                    <h2 className="text-base font-bold text-slate-900 font-['Space_Grotesk'] flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-600" />
+                        Work Progress Updates
+                    </h2>
+                    <div className="space-y-3">
+                        {project.timeline.filter(u => u.isPublic !== false).map((u, i) => (
+                            <div key={u._id || i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                                        {u.progress || u.progressPercentage}% Complete
+                                    </span>
+                                    <span className="text-slate-400">{new Date(u.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                </div>
+                                {(u.workDescription || u.notes) && (
+                                    <p className="text-slate-700 leading-relaxed">{u.workDescription || u.notes}</p>
+                                )}
+                                {(u.photoUrl || u.progressPhoto) && (
+                                    <img
+                                        src={u.photoUrl || u.progressPhoto}
+                                        alt={`Work progress at ${u.progress || u.progressPercentage}%`}
+                                        className="w-full max-h-48 object-cover rounded-xl border border-slate-200 shadow-sm"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Financial Overview (If configured as public) */}
             {project.showFinancialData && (
                 <div className="custom-card p-6 space-y-4">
@@ -190,6 +225,63 @@ export default function PublicProjectDetails() {
                 </div>
             )}
 
+            {/* Completion Evidence (if completed) */}
+            {project.completion?.completionPercentage && (
+                <div className="custom-card p-6 space-y-4 border-t-4 border-t-emerald-500 bg-emerald-50/40">
+                    <h2 className="text-base font-bold text-emerald-900 font-['Space_Grotesk'] flex items-center gap-2">
+                        <Award className="w-5 h-5 text-emerald-600" />
+                        {project.completion.completionPercentage === 100 ? 'Project Completed' : 'Completion Evidence'}
+                    </h2>
+
+                    {/* Completion summary grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                        <div className="p-3 bg-white rounded-xl border border-emerald-100 space-y-1">
+                            <div className="text-emerald-700 font-medium">Completion</div>
+                            <div className="text-xl font-extrabold text-emerald-800 font-['Space_Grotesk']">
+                                {project.completion.completionPercentage}%
+                            </div>
+                        </div>
+                        {project.completion.completionDate && (
+                            <div className="p-3 bg-white rounded-xl border border-emerald-100 space-y-1">
+                                <div className="flex items-center gap-1 text-emerald-700 font-medium">
+                                    <Calendar className="w-3.5 h-3.5" /> Completed On
+                                </div>
+                                <div className="font-bold text-emerald-900">{formatDate(project.completion.completionDate)}</div>
+                            </div>
+                        )}
+                        <div className="p-3 bg-white rounded-xl border border-emerald-100 space-y-1">
+                            <div className="text-emerald-700 font-medium">Photo Evidence</div>
+                            <div className={`font-bold ${project.completion.completionImage ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                {project.completion.completionImage ? '✓ Available' : 'Not provided'}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    {project.completion.completionDescription && (
+                        <div className="p-4 bg-white rounded-xl border border-emerald-100 text-xs">
+                            <div className="text-emerald-700 font-semibold mb-1">Completion Description</div>
+                            <p className="text-slate-700 leading-relaxed">{project.completion.completionDescription}</p>
+                        </div>
+                    )}
+
+                    {/* Completion Image */}
+                    {project.completion.completionImage && (
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800">
+                                <ImageIcon className="w-4 h-4 text-emerald-600" />
+                                Completed Road — Photo Evidence
+                            </div>
+                            <img
+                                src={project.completion.completionImage}
+                                alt={`Completion photo for ${project.projectName}`}
+                                className="w-full max-h-80 object-cover rounded-xl border border-emerald-200 shadow-sm"
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Report Issue CTA */}
             <div className="custom-card p-6 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -212,3 +304,4 @@ export default function PublicProjectDetails() {
         </div>
     );
 }
+

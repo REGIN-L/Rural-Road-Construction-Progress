@@ -22,8 +22,28 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['ADMIN', 'ENGINEER', 'CONTRACTOR'],
-        default: 'ENGINEER'
+        enum: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'PUBLIC'],
+        default: 'PUBLIC'
+    },
+    village: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    district: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    state: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    phone: {
+        type: String,
+        default: '',
+        trim: true
     }
 }, {
     timestamps: true

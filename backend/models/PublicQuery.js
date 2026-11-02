@@ -22,6 +22,36 @@ const publicQuerySchema = new mongoose.Schema({
         required: [true, 'Query type is required'],
         trim: true
     },
+    requestType: {
+        type: String,
+        enum: ['FEEDBACK', 'NEW_ROAD_REQUEST'],
+        default: 'FEEDBACK'
+    },
+    roadName: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    startPoint: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    endPoint: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    reason: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    urgency: {
+        type: String,
+        enum: ['Low', 'Medium', 'High', 'Urgent'],
+        default: 'Medium'
+    },
     state: {
         type: String,
         required: [true, 'State is required'],
@@ -37,6 +67,11 @@ const publicQuerySchema = new mongoose.Schema({
         required: [true, 'Location / Village is required'],
         trim: true
     },
+    village: {
+        type: String,
+        default: '',
+        trim: true
+    },
     description: {
         type: String,
         required: [true, 'Description is required'],
@@ -49,8 +84,8 @@ const publicQuerySchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Under Review', 'In Progress', 'Resolved', 'Rejected'],
-        default: 'Pending'
+        enum: ['Submitted', 'Pending', 'Under Review', 'In Progress', 'Resolved', 'Rejected'],
+        default: 'Submitted'
     },
     adminResponse: {
         type: String,
@@ -58,6 +93,35 @@ const publicQuerySchema = new mongoose.Schema({
         trim: true
     },
     projectId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Project',
+        default: null
+    },
+    submittedByUserId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+        set: function (val) {
+            if (!val || val === 'user_citizen' || !mongoose.Types.ObjectId.isValid(val)) {
+                return null;
+            }
+            return val;
+        }
+    },
+    priority: {
+        type: String,
+        enum: ['Low', 'Medium', 'High', 'Urgent'],
+        default: 'Medium'
+    },
+    staffNotes: {
+        type: String,
+        default: ''
+    },
+    isApprovedForProject: {
+        type: Boolean,
+        default: false
+    },
+    createdProjectId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Project',
         default: null

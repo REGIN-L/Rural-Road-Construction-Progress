@@ -35,7 +35,7 @@ export default function Sidebar() {
         { name: 'Projects', path: '/admin/projects', icon: FolderKanban },
         { name: 'Add Project', path: '/admin/projects/create', icon: PlusCircle },
         { name: 'Public Queries', path: '/admin/public-queries', icon: MessageSquare },
-        { name: 'Deletion Requests', path: '/admin/deletion-requests', icon: Trash2 },
+        { name: 'Change Requests', path: '/admin/change-requests', icon: Clock },
         { name: 'Funds', path: '/admin/funds', icon: IndianRupee },
         { name: 'Reports', path: '/admin/reports', icon: FileText },
         { name: 'Users', path: '/admin/users', icon: Users }
@@ -45,7 +45,7 @@ export default function Sidebar() {
         { name: 'Dashboard', path: '/engineer/dashboard', icon: LayoutDashboard },
         { name: 'Projects', path: '/engineer/projects', icon: FolderKanban },
         { name: 'Add Project', path: '/engineer/projects/create', icon: PlusCircle },
-        { name: 'My Deletion Requests', path: '/engineer/deletion-requests', icon: Trash2 }
+        { name: 'Change Requests', path: '/engineer/change-requests', icon: Clock }
     ];
 
     const contractorNav = [

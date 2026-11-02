@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { BriefcaseBusiness, MapPin, Upload, Award, CheckCircle, X } from 'lucide-react';
+import { BriefcaseBusiness, MapPin, Upload, Award, CheckCircle, X, Calendar, Clock, Camera, Image as ImageIcon } from 'lucide-react';
 import { addProgressUpdate, getProjects, submitProjectCompletion, uploadImage } from '../services/projectService';
 import StatusBadge from '../components/StatusBadge';
 import ProgressBar from '../components/ProgressBar';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatDate } from '../utils/formatters';
 import { useAuth } from '../hooks/useAuth';
 
 export default function ContractorDashboard() {
@@ -15,6 +15,8 @@ export default function ContractorDashboard() {
     const [modalType, setModalType] = useState(null); // 'progress' | 'completion'
     const [progress, setProgress] = useState('');
     const [notes, setNotes] = useState('');
+    const [progressPhoto, setProgressPhoto] = useState('');
+    const [progressPhotoUploading, setProgressPhotoUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -42,6 +44,7 @@ export default function ContractorDashboard() {
         setModalType(type);
         setProgress(String(project.currentProgress));
         setNotes('');
+        setProgressPhoto('');
         setMessage('');
         setCompletionForm({
             completionPercentage: '100',
@@ -57,6 +60,20 @@ export default function ContractorDashboard() {
         setModalType(null);
     };
 
+    const handleProgressPhotoUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setProgressPhotoUploading(true);
+            const res = await uploadImage(file);
+            setProgressPhoto(res.data?.url || res.url || '');
+        } catch (err) {
+            setMessage('Photo upload failed. Please try again.');
+        } finally {
+            setProgressPhotoUploading(false);
+        }
+    };
+
     const submitProgress = async (event) => {
         event.preventDefault();
         if (!selectedProject || !progress || !notes) return;
@@ -64,7 +81,10 @@ export default function ContractorDashboard() {
             setSubmitting(true);
             await addProgressUpdate(selectedProject._id, {
                 progress: Number(progress),
+                progressPercentage: Number(progress),
+                workDescription: notes,
                 notes,
+                photoUrl: progressPhoto,
                 isPublic: true
             });
             await loadProjects();
@@ -145,6 +165,16 @@ export default function ContractorDashboard() {
                             <MapPin className="w-3.5 h-3.5 text-blue-600" />
                             {project.village}, {project.district} ({project.roadLength} km)
                         </div>
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="flex items-center gap-1 text-slate-400">
+                                <Calendar className="w-3 h-3" />
+                                <span>Start: <strong className="text-slate-700">{formatDate(project.startDate) || '—'}</strong></span>
+                            </div>
+                            <div className="flex items-center gap-1 text-slate-400">
+                                <Clock className="w-3 h-3" />
+                                <span>Due: <strong className="text-slate-700">{formatDate(project.expectedCompletion) || '—'}</strong></span>
+                            </div>
+                        </div>
                         <div className="space-y-1">
                             <div className="flex justify-between text-xs text-slate-600 font-medium">
                                 <span>Progress</span>
@@ -169,15 +199,14 @@ export default function ContractorDashboard() {
                             >
                                 <Upload className="w-4 h-4" /> Update Progress
                             </button>
-                            {project.currentProgress < 100 && (
+                            {project.currentProgress < 100 ? (
                                 <button
                                     onClick={() => openModal(project, 'completion')}
                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
                                 >
-                                    <Award className="w-4 h-4" /> Submit Completion
+                                    <Award className="w-4 h-4" /> Submit 100% Completion
                                 </button>
-                            )}
-                            {project.currentProgress >= 100 && (
+                            ) : (
                                 <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
                                     <CheckCircle className="w-4 h-4" /> Completed
                                 </div>
@@ -190,22 +219,39 @@ export default function ContractorDashboard() {
             {/* Progress Modal */}
             {selectedProject && modalType === 'progress' && (
                 <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-                    <form onSubmit={submitProgress} className="w-full max-w-md bg-white rounded-2xl p-6 space-y-4 text-xs">
+                    <form onSubmit={submitProgress} className="w-full max-w-md bg-white rounded-2xl p-6 space-y-4 text-xs max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-base font-bold text-slate-900">Upload Progress: {selectedProject.projectId}</h2>
+                            <div>
+                                <h2 className="text-base font-bold text-slate-900">Upload Progress Update</h2>
+                                <p className="text-slate-500 text-[11px]">{selectedProject.projectId} — {selectedProject.projectName}</p>
+                            </div>
                             <button type="button" onClick={closeModal} className="text-slate-400 hover:text-slate-600 cursor-pointer"><X className="w-4 h-4" /></button>
                         </div>
                         <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Current progress (%)</label>
-                            <input type="number" min="0" max="100" required value={progress} onChange={(e) => setProgress(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3" />
+                            <label className="block font-semibold text-slate-700 mb-1">Progress Percentage (%) <span className="text-rose-500">*</span></label>
+                            <input type="number" min="0" max="100" required value={progress} onChange={(e) => setProgress(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3" placeholder="e.g. 65" />
                         </div>
                         <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Work notes</label>
-                            <textarea required rows="4" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe completed work, materials, and site conditions" className="w-full border border-slate-200 rounded-xl p-3" />
+                            <label className="block font-semibold text-slate-700 mb-1">Work Description <span className="text-rose-500">*</span></label>
+                            <textarea required rows="4" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe completed work, materials used, and site conditions" className="w-full border border-slate-200 rounded-xl p-3" />
                         </div>
+                        <div>
+                            <label className="block font-semibold text-slate-700 mb-1">
+                                <span className="flex items-center gap-1"><Camera className="w-3.5 h-3.5 text-blue-600" /> Progress Photo (Optional)</span>
+                            </label>
+                            <input type="file" accept="image/*" onChange={handleProgressPhotoUpload} className="w-full border border-slate-200 rounded-xl p-2" />
+                            {progressPhotoUploading && <p className="text-blue-600 text-[10px] mt-1">Uploading photo...</p>}
+                            {progressPhoto && (
+                                <div className="mt-2 space-y-1">
+                                    <p className="text-emerald-600 text-[10px]">✓ Photo uploaded</p>
+                                    <img src={progressPhoto} alt="Progress" className="w-full max-h-32 object-cover rounded-xl border border-slate-200" />
+                                </div>
+                            )}
+                        </div>
+                        {message && <p className="text-rose-600 text-[11px] font-medium">{message}</p>}
                         <div className="flex justify-end gap-2">
                             <button type="button" onClick={closeModal} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold cursor-pointer">Cancel</button>
-                            <button type="submit" disabled={submitting} className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-50 cursor-pointer">{submitting ? 'Uploading...' : 'Submit Progress'}</button>
+                            <button type="submit" disabled={submitting || progressPhotoUploading} className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-50 cursor-pointer">{submitting ? 'Uploading...' : 'Submit Progress'}</button>
                         </div>
                     </form>
                 </div>
