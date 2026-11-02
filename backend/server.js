@@ -31,6 +31,23 @@ app.use(async (req, res, next) => {
     next();
 });
 
+// Locate frontend dist directory if built
+const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+const rootDist = path.join(__dirname, '..', 'dist');
+let staticDist = null;
+try {
+    if (fs.existsSync(frontendDist)) {
+        staticDist = frontendDist;
+    } else if (fs.existsSync(rootDist)) {
+        staticDist = rootDist;
+    }
+} catch (_) {}
+
+// Serve frontend static assets if available
+if (staticDist) {
+    app.use(express.static(staticDist));
+}
+
 // Health check
 app.get('/api/health', (req, res) => {
     const isDbConnected = mongoose.connection.readyState === 1;
@@ -87,7 +104,41 @@ app.use('/api/deletion-requests', require('./routes/deletionRequestRoutes'));
 app.use('/api/project-edit-requests', require('./routes/projectEditRequestRoutes'));
 app.use('/api/public-queries', require('./routes/publicQueryRoutes'));
 
-// 404 Handler
+// Root route handler: Serves index.html if frontend is present, or returns API operational status
+app.get('/', (req, res) => {
+    if (staticDist && fs.existsSync(path.join(staticDist, 'index.html'))) {
+        return res.sendFile(path.join(staticDist, 'index.html'));
+    }
+
+    const isDbConnected = mongoose.connection.readyState === 1;
+    res.json({
+        success: true,
+        status: 'Operational',
+        system: 'RuralConnect API',
+        message: 'RuralConnect: Web-Based Real-Time Dashboard for Monitoring Rural Road Construction Progress & Fund Utilization',
+        database: isDbConnected ? 'Connected to MongoDB Atlas' : 'Local Fallback Store',
+        endpoints: {
+            health: '/api/health',
+            publicProjects: '/api/public/projects',
+            publicQueries: '/api/public-queries',
+            stats: '/api/public/stats',
+            auth: '/api/auth/login'
+        }
+    });
+});
+
+// SPA Client-side routing fallback for non-API routes
+app.get('*', (req, res, next) => {
+    if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads')) {
+        return next();
+    }
+    if (staticDist && fs.existsSync(path.join(staticDist, 'index.html'))) {
+        return res.sendFile(path.join(staticDist, 'index.html'));
+    }
+    next();
+});
+
+// 404 Handler for undefined API routes
 app.use((req, res) => {
     res.status(404).json({ success: false, message: `Route not found – ${req.originalUrl}` });
 });
@@ -96,7 +147,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-if (!process.env.VERCEL && (require.main === module || !process.env.VERCEL_ENV)) {
+if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`🚀 RuralConnect Backend API running on http://localhost:${PORT}`);
     });

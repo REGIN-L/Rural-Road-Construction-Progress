@@ -30,3 +30,4 @@ const uploadSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Upload', uploadSchema);
+
